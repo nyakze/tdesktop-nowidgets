@@ -1,11 +1,11 @@
 [Desktop Entry]
-Name=Telegram
-Comment=New era of messaging
-TryExec=Telegram
-Exec=Telegram -- %U
+Name=NoWidgetGram
+Comment=Telegram Desktop fork with widget JavaScript disabled
+TryExec=NoWidgetGram
+Exec=NoWidgetGram -- %U
 Icon=org.telegram.desktop
 Terminal=false
-StartupWMClass=TelegramDesktop
+StartupWMClass=nwgram
 Type=Application
 Categories=Chat;Network;InstantMessaging;Qt;
 MimeType=x-scheme-handler/tg;x-scheme-handler/tonsite;x-scheme-handler/ton;

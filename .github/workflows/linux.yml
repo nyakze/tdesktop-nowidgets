@@ -151,9 +151,9 @@ jobs:
           if [ -n "${{ matrix.defines }}" ]; then
             DEFINE="-D ${{ matrix.defines }}=ON"
             echo Define from matrix: $DEFINE
-            echo "ARTIFACT_NAME=Telegram ${{ matrix.defines }}" >> $GITHUB_ENV
+            echo "ARTIFACT_NAME=NoWidgetGram ${{ matrix.defines }}" >> $GITHUB_ENV
           else
-            echo "ARTIFACT_NAME=Telegram" >> $GITHUB_ENV
+            echo "ARTIFACT_NAME=NoWidgetGram" >> $GITHUB_ENV
           fi
 
           ccache -z
@@ -207,7 +207,7 @@ jobs:
       - name: Check.
         if: env.ONLY_CACHE == 'false'
         run: |
-          filePath="out/Release/Telegram"
+          filePath="out/Release/NoWidgetGram"
           if test -f "$filePath"; then
             echo "Build successfully done! :)"
 
@@ -223,7 +223,7 @@ jobs:
         run: |
           cd out/Release
           mkdir artifact
-          mv Telegram artifact/
+          mv NoWidgetGram artifact/
           mv Updater artifact/ 2>/dev/null || true
       - uses: actions/upload-artifact@v7
         if: env.UPLOAD_ARTIFACT == 'true'

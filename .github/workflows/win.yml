@@ -183,7 +183,7 @@ jobs:
       - name: Read configuration matrix.
         shell: bash
         run: |
-          ARTIFACT_NAME="Telegram"
+          ARTIFACT_NAME="NoWidgetGram"
 
           ARCH=""
           if [ -n "${{ matrix.arch }}" ]; then
@@ -289,7 +289,7 @@ jobs:
         run: |
           set OUT=%TBUILD%\%REPO_NAME%\out\Debug
           mkdir artifact
-          move %OUT%\Telegram.exe artifact/
+          move %OUT%\NoWidgetGram.exe artifact/
           if exist %OUT%\Updater.exe move %OUT%\Updater.exe artifact/
       - uses: actions/upload-artifact@v7
         name: Upload artifact.

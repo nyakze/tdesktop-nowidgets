@@ -1,6 +1,7 @@
 # tdesktop-nowidgets
 
-**Unofficial fork of [Telegram Desktop][tdesktop] with JavaScript execution disabled in message widgets.**
+**NoWidgetGram** — an unofficial fork of [Telegram Desktop][tdesktop] with JavaScript
+execution disabled in message widgets.
 
 Not affiliated with Telegram. Based on the GPLv3 (OpenSSL exception) sources of the official client.
 
@@ -24,6 +25,17 @@ including all upstream fixes and features — is stock.
 If the official client gains a built-in control over widgets (for example, loading them
 on click, or a settings toggle), this fork would no longer be necessary.
 
+## Download
+
+Prebuilt binaries are on the [Releases][releases] page:
+
+* `NoWidgetGram-linux-x64` — Linux (x86-64)
+* `NoWidgetGram-windows-x64` — Windows (x64)
+* `NoWidgetGram-macos` — macOS
+
+The application is branded **NoWidgetGram** (own name and icon) and keeps its profile
+in the `nwgram` working directory, separately from official Telegram Desktop.
+
 ## Builds
 
 * CI builds **Release** binaries for **Linux, Windows (x64) and macOS** on every push —
@@ -46,9 +58,8 @@ on click, or a settings toggle), this fork would no longer be necessary.
 ## Disclaimer
 
 * Unofficial. Not affiliated with or endorsed by Telegram. The name "Telegram" is used
-  only to refer to the original product. Note that the build compiles upstream resources
-  unmodified and therefore ships with the original application name and icons — this is
-  a personal build of the open-source client, not an official Telegram product.
+  only to refer to the original product; the application itself is branded as
+  NoWidgetGram with its own name and icons.
 * The patch removes the widget JavaScript execution path only. Other attack surfaces of
   the client remain, as in any messenger — upstream security updates are still required.
 * Distributed under the same terms as upstream: GPLv3 with OpenSSL exception.
@@ -57,8 +68,8 @@ on click, or a settings toggle), this fork would no longer be necessary.
 
 ## На русском
 
-Неофициальный форк Telegram Desktop, в котором **виджеты в сообщениях не исполняют
-JavaScript**.
+**NoWidgetGram** — неофициальный форк Telegram Desktop, в котором **виджеты в сообщениях
+не исполняют JavaScript**.
 
 В Telegram Desktop появились виджеты — HTML + JS мини-приложения в сообщениях,
 исполняемые в песочнице QuickJS внутри клиента. Фича развивается быстро: известные
@@ -75,9 +86,12 @@ JS-рантайм не создаётся никогда. Всё остальн�
 загрузка по клику или переключатель в настройках), форк станет не нужен.
 
 Сборки (Linux / Windows / macOS) собираются в Actions, автообновление отключено.
+Готовые бинарники — на странице [Releases][releases]; приложение называется **NoWidgetGram**
+(своё имя и иконка) и хранит профиль в отдельном рабочем каталоге `nwgram`.
 Подробнее: `docs/fork-nowidgets.md`. Проверка патча: `tools/verify-nowidgets.sh`.
 
 [tdesktop]: https://github.com/telegramdesktop/tdesktop
 [quickjs]: https://github.com/quickjs-ng/quickjs
 [actions]: https://github.com/nyakze/tdesktop-nowidgets/actions
+[releases]: https://github.com/nyakze/tdesktop-nowidgets/releases
 [api_credentials]: https://core.telegram.org/api/obtaining_api_id

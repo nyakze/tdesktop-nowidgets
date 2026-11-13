@@ -343,7 +343,10 @@ void Launcher::init() {
 	prepareSettings();
 	initQtMessageLogging();
 
-	QApplication::setApplicationName(u"TelegramDesktop"_q);
+	// FORK (NoWidgetGram): the application name drives the default workdir
+	// (e.g. ~/.local/share/nwgram) and the WM class on Linux.
+	QApplication::setApplicationName(u"nwgram"_q);
+	QApplication::setApplicationDisplayName(u"NoWidgetGram"_q);
 
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 	// fallback session management is useless for tdesktop since it doesn't have
