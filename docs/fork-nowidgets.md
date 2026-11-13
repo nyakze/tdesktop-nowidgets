@@ -50,12 +50,19 @@
 
 1. Получите свои `api_id`/`api_hash`: https://core.telegram.org/api/obtaining_api_id
    (один номер = один api_id; **api_hash не ротируется** — не публикуйте его).
-2. Положите креды в `~/.config/tdesktop-fork/api.conf` (не в репозиторий!):
+2. Положите креды в `~/.config/tdesktop-fork/api.conf` (не в репозиторий!)
+   и закройте файл от чужих глаз (umask по умолчанию делает файлы читаемыми всеми):
 
    ```bash
+   mkdir -p ~/.config/tdesktop-fork && chmod 700 ~/.config/tdesktop-fork
+   cat > ~/.config/tdesktop-fork/api.conf <<'EOF'
    export TDESKTOP_API_ID=1234567
    export TDESKTOP_API_HASH=0123456789abcdef0123456789abcdef
+   EOF
+   chmod 600 ~/.config/tdesktop-fork/api.conf
    ```
+
+   `build-fork.sh` отказывается работать, если файл доступен другим пользователям.
 
 3. Соберите:
 

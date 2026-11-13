@@ -15,6 +15,13 @@ cd "$(dirname "$0")"
 
 CONF="${HOME}/.config/tdesktop-fork/api.conf"
 if [[ -f "$CONF" ]]; then
+    # Credentials must not be readable by other local users.
+    perms="$(stat -c %a "$CONF")"
+    if [[ "$perms" != "600" && "$perms" != "400" ]]; then
+        echo "ERROR: $CONF has mode $perms (world/group readable)."
+        echo "Run: chmod 600 $CONF"
+        exit 1
+    fi
     # shellcheck disable=SC1090
     source "$CONF"
 fi
