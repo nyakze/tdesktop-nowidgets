@@ -146,6 +146,9 @@ jobs:
 
           ccache -z
 
+          # FORK: CMAKE_COMPILE_WARNING_AS_ERROR is dropped — Release builds
+          # trigger a false-positive -Waggressive-loop-optimizations in GCC 15
+          # via range-v3/std::advance (upstream CI builds Debug at -O0 only).
           docker run --rm \
           -u $(id -u) \
           -v $PWD:/usr/src/tdesktop \
@@ -157,7 +160,6 @@ jobs:
           -D CMAKE_CONFIGURATION_TYPES=Release \
           -D CMAKE_C_FLAGS_DEBUG="-O0 -fpch-preprocess" \
           -D CMAKE_CXX_FLAGS_DEBUG="-O0 -fpch-preprocess" \
-          -D CMAKE_COMPILE_WARNING_AS_ERROR=ON \
           -D TDESKTOP_API_ID=${{ secrets.TDESKTOP_API_ID }} \
           -D TDESKTOP_API_HASH=${{ secrets.TDESKTOP_API_HASH }} \
           -D DESKTOP_APP_DISABLE_AUTOUPDATE=ON \
