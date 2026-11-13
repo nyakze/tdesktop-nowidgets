@@ -22,6 +22,12 @@ fork removes it with a minimal patch: widget messages render as an "unsupported
 message" card, and the JavaScript runtime is never instantiated. Everything else —
 including all upstream fixes and features — is stock.
 
+**Update (November 2026):** according to the upstream maintainer, delivery of these
+exploits appears to be mitigated server-side
+([issue comment](https://github.com/telegramdesktop/tdesktop/issues/31619#issuecomment-6860672291)),
+though the client-side attack surface is still being discussed upstream. The fork is
+kept as a precaution.
+
 If the official client gains a built-in control over widgets (for example, loading them
 on click, or a settings toggle), this fork would no longer be necessary.
 
@@ -81,6 +87,12 @@ memory-safety исправления, а отключить виджеты в н
 минимальным патчем: виджет-сообщения показываются карточкой «unsupported message», а
 JS-рантайм не создаётся никогда. Всё остальное, включая исправления безопасности
 апстрима, — как в официальном клиенте.
+
+**Обновление (ноябрь 2026):** по словам мейнтейнера tdesktop, доставка этих эксплойтов,
+похоже, митигирована на стороне сервера
+([комментарий в issue](https://github.com/telegramdesktop/tdesktop/issues/31619#issuecomment-6860672291)),
+однако клиентская поверхность атак ещё обсуждается в апстриме. Форк остаётся как
+подстраховка.
 
 Если в официальном клиенте появится встроенная регулировка виджетов (например,
 загрузка по клику или переключатель в настройках), форк станет не нужен.
