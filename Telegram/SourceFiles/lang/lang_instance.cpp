@@ -17,8 +17,6 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "base/qthelp_regex.h"
 #include "test/test_l10n_seams.h"
 
-#include <QRegularExpression>
-
 #include "lang_auto_counts.h" // kKeysCount, kTagsCount.
 
 namespace Lang {
@@ -547,7 +545,6 @@ void Instance::fillFromSerialized(
 	for (auto i = 0, count = nonDefaultValuesCount * 2; i != count; i += 2) {
 		applyValue(nonDefaultStrings[i], nonDefaultStrings[i + 1]);
 	}
-	applyForkBranding();
 	updatePluralRules();
 	updateChoosingStickerReplacement();
 
@@ -562,32 +559,6 @@ void Instance::loadFromContent(const QByteArray &content) {
 		LOG(("Lang load errors: %1").arg(loader.errors()));
 	} else if (!loader.warnings().isEmpty()) {
 		LOG(("Lang load warnings: %1").arg(loader.warnings()));
-	}
-	applyForkBranding();
-}
-
-void Instance::applyForkBranding() {
-	// FORK (NoWidgetGram): strip the word "Official" from the About/intro
-	// strings while keeping the rest of the translation intact. Cloud packs
-	// served by Telegram override the compiled base strings, so upstream's
-	// "Official ..." texts would otherwise survive in every language.
-	static const auto kKeys = {
-		QByteArray("lng_about_text1"),
-		QByteArray("lng_intro_about"),
-	};
-	static const auto kOfficial = QRegularExpression(
-		"^(official|официальн[а-яё]*|офіцыйн[а-яё]*|officiel\\w*|offiziell\\w*|"
-		"ufficial\\w*|oficial\\w*|oficjaln\\w*|oficiál\\w*|hivatalos|resm[iî]|"
-		"ofisial\\w*|ofisjel\\w*|ofisjële|offisjele)\\s+",
-		QRegularExpression::CaseInsensitiveOption);
-	for (const auto &key : kKeys) {
-		auto value = getNonDefaultValue(key);
-		if (value.isEmpty()) {
-			// Uses the compiled base string, which is already fork-branded.
-			continue;
-		}
-		value.replace(kOfficial, QString());
-		applyValue(key, value.toUtf8());
 	}
 }
 

@@ -36,10 +36,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 namespace {
 
 rpl::producer<TextWithEntities> Text1() {
-	return tr::lng_about_text1(
-		lt_api_link,
-		tr::lng_about_text1_api(tr::url(u"https://core.telegram.org/api"_q)),
-		tr::marked);
+	return rpl::single({ .text = "NoWidgetGram based on the Telegram Desktop." });
 }
 
 rpl::producer<TextWithEntities> Text2() {

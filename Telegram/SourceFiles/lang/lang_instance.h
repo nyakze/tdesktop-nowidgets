@@ -110,7 +110,6 @@ private:
 
 	void applyDifferenceToMe(const MTPDlangPackDifference &difference);
 	void applyValue(const QByteArray &key, const QByteArray &value);
-	void applyForkBranding();
 	void resetValue(const QByteArray &key);
 	void reset(const Language &language);
 	void fillFromCustomContent(
