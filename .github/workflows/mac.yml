@@ -98,9 +98,10 @@ jobs:
           ./$REPO_NAME/Telegram/build/prepare/mac.sh skip-release silent
 
       - name: Free up some disk space.
-        # FORK: */out/src/* is kept — it holds generated sources required by
-        # the build (tdesktop_rust/out/src/wallet_engine/wallet_engine.cpp).
-        run: find Libraries '(' '(' ! '(' -name '*.a' -o -name '*.h' -o -name '*.hpp' -o -name '*.inc' -o -name '*.cmake' -o -name '*.pc' -o -path '*/include/*' -o -path '*/out/src/*' -o -path '*/objects-*' -o -path '*/cache_keys/*' -o -path '*/patches/*' -o -perm +111 ')' -type f ')' -o -empty ')' -delete
+        # FORK: */out/src/* and */local/src/* are kept — they hold generated
+        # sources required by the build (wallet_engine.cpp; the macOS script
+        # installs under Libraries/local, the Windows one under tdesktop_rust/out).
+        run: find Libraries '(' '(' ! '(' -name '*.a' -o -name '*.h' -o -name '*.hpp' -o -name '*.inc' -o -name '*.cmake' -o -name '*.pc' -o -path '*/include/*' -o -path '*/out/src/*' -o -path '*/local/src/*' -o -path '*/objects-*' -o -path '*/cache_keys/*' -o -path '*/patches/*' -o -perm +111 ')' -type f ')' -o -empty ')' -delete
 
       - name: Telegram Desktop build.
         if: env.ONLY_CACHE == 'false'
