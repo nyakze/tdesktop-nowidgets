@@ -74,3 +74,9 @@ settings.local.json
 
 # Generated changelog page (built by CI, deployed to GitHub Pages)
 /docs/changelog/
+
+# tdesktop-nowidgets fork: local API credentials, never commit.
+# The build reads ~/.config/tdesktop-fork/api.conf by default; these
+# patterns cover accidental copies inside the repository.
+api.conf
+*.api.conf
