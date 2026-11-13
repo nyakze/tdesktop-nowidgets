@@ -1,105 +1,100 @@
-# [Telegram Desktop][telegram_desktop] – Official Messenger
+# tdesktop-nowidgets
 
-This is the complete source code and the build instructions for the official [Telegram][telegram] messenger desktop client, based on the [Telegram API][telegram_api] and the [MTProto][telegram_proto] secure protocol.
+**Unofficial fork of [Telegram Desktop][tdesktop] where message widgets never execute JavaScript.**
 
-[![Version](https://badge.fury.io/gh/telegramdesktop%2Ftdesktop.svg)](https://github.com/telegramdesktop/tdesktop/releases)
-[![Build Status](https://github.com/telegramdesktop/tdesktop/workflows/Windows./badge.svg)](https://github.com/telegramdesktop/tdesktop/actions)
-[![Build Status](https://github.com/telegramdesktop/tdesktop/workflows/MacOS./badge.svg)](https://github.com/telegramdesktop/tdesktop/actions)
-[![Build Status](https://github.com/telegramdesktop/tdesktop/workflows/Linux./badge.svg)](https://github.com/telegramdesktop/tdesktop/actions)
-[![Built with Depot](https://img.shields.io/badge/Built%20with-Depot.dev-46A75A)](https://depot.dev)
+Not affiliated with Telegram. Based on the GPLv3 (OpenSSL exception) sources of the official client.
 
-[![Preview of Telegram Desktop][preview_image]][preview_image_url]
+---
 
-The source code is published under GPLv3 with OpenSSL exception, the license is available [here][license].
+## Why this repository exists
 
-## Supported systems
+Telegram recently shipped **widgets** — HTML + JavaScript mini-apps embedded directly in
+messages, executed in a bundled [QuickJS][quickjs] sandbox inside the client. This is a
+powerful feature, and also a brand-new remote attack surface:
 
-The latest version is available for
+* Public exploits achieved **arbitrary code execution on merely viewing a message**
+  with a widget (desktop 7.4.1 / 7.4.2; the known vectors were fixed in 7.4.3).
+* The QuickJS-ng engine keeps receiving memory-safety bugs (heap overflows, code
+  injection) — every one of them is potentially a new "view a message → run code" vector
+  until the patched engine reaches users.
+* **Widgets cannot be disabled in settings.** The only mitigation is "don't open chats
+  with bots you don't trust".
+* Telegram's own codebase notes that the JS policy sandbox and memory limits do **not**
+  guarantee containment of native engine memory errors.
 
-* [Windows 7 and above (64 bit)](https://telegram.org/dl/desktop/win64) ([portable](https://telegram.org/dl/desktop/win64_portable))
-* [Windows 7 and above (32 bit)](https://telegram.org/dl/desktop/win) ([portable](https://telegram.org/dl/desktop/win_portable))
-* [macOS 10.13 and above](https://telegram.org/dl/desktop/mac)
-* [Linux static build for 64 bit](https://telegram.org/dl/desktop/linux)
-* [Snap](https://snapcraft.io/telegram-desktop)
-* [Flatpak](https://flathub.org/apps/details/org.telegram.desktop)
+Compromise means full account takeover, stolen session keys, files and funds — the client
+is a high-value target and a message preview should never be able to do this.
 
-## Old system versions
+This fork removes the whole class of attacks with a minimal one-file patch: widget
+messages render as an "unsupported message" card, and the JavaScript runtime is **never
+instantiated** — not in background, not on click. Everything else (fixes, features) is
+stock upstream.
 
-Version **4.9.9** was the last that supports older systems
+## What we hope to see in the official client
 
-* [macOS 10.12](https://updates.tdesktop.com/tmac/tsetup.4.9.9.dmg)
-* [Linux with glibc < 2.28 static build](https://updates.tdesktop.com/tlinux/tsetup.4.9.9.tar.xz)
+Until there is a built-in control, this fork exists. We would gladly abandon it if
+official Telegram Desktop adds at least one of:
 
-Version **2.4.4** was the last that supports older systems
+1. **Tap-to-run widgets** — show a "load interactive widget?" card instead of running
+   JavaScript automatically on message view (the same pattern as "click to load" for
+   large media). This alone turns 0-click RCE into a deliberate user action.
+2. **A settings switch** to disable widgets entirely (or per-chat).
+3. Ideally: running the widget engine out-of-process, like bot web views already do.
 
-* [OS X 10.10 and 10.11](https://updates.tdesktop.com/tosx/tsetup-osx.2.4.4.dmg)
-* [Linux static build for 32 bit](https://updates.tdesktop.com/tlinux32/tsetup32.2.4.4.tar.xz)
+## Builds
 
-Version **1.8.15** was the last that supports older systems
+* CI builds **Release** binaries for **Linux, Windows (x64) and macOS** on every push —
+  see the [Actions][actions] page (artifacts are kept 30 days).
+* Builds are made with `DESKTOP_APP_DISABLE_AUTOUPDATE=ON`: the official updater would
+  replace this fork with the official binary. There is no auto-update channel yet —
+  watch the repository to hear about new releases.
+* API credentials are **not** included: building requires your own `api_id`/`api_hash`
+  ([how to obtain][api_credentials]), passed via `TDESKTOP_API_ID`/`TDESKTOP_API_HASH`
+  repository secrets (CI) or `~/.config/tdesktop-fork/api.conf` (local `build-fork.sh`).
 
-* [Windows XP and Vista](https://updates.tdesktop.com/tsetup/tsetup.1.8.15.exe) ([portable](https://updates.tdesktop.com/tsetup/tportable.1.8.15.zip))
-* [OS X 10.8 and 10.9](https://updates.tdesktop.com/tmac/tsetup.1.8.15.dmg)
-* [OS X 10.6 and 10.7](https://updates.tdesktop.com/tmac32/tsetup32.1.8.15.dmg)
+## Verification & maintenance
 
-## Third-party
+* `tools/verify-nowidgets.sh` — static checks that the patch survived rebases.
+* `docs/fork-nowidgets.md` — the full technical picture (where QuickJS is wired in, what
+  exactly the patch does, how to maintain the fork).
+* The fork is regularly rebased onto upstream `dev`; when in doubt, compare
+  `Telegram/SourceFiles/tgw/tgw_media.cpp` with upstream — the patch lives only there.
 
-* Qt 6 ([LGPL](http://doc.qt.io/qt-6/lgpl.html)) and Qt 5.15 ([LGPL](http://doc.qt.io/qt-5/lgpl.html)) slightly patched
-* OpenSSL 3.2.1 ([Apache License 2.0](https://openssl-library.org/source/license/apache-license-2.0.txt))
-* WebRTC ([New BSD License](https://github.com/desktop-app/tg_owt/blob/master/LICENSE))
-* zlib ([zlib License](http://www.zlib.net/zlib_license.html))
-* LZMA SDK 9.20 ([public domain](http://www.7-zip.org/sdk.html))
-* liblzma ([public domain](http://tukaani.org/xz/))
-* Google Breakpad ([License](https://chromium.googlesource.com/breakpad/breakpad/+/master/LICENSE))
-* Google Crashpad ([Apache License 2.0](https://chromium.googlesource.com/crashpad/crashpad/+/master/LICENSE))
-* GYP ([BSD License](https://github.com/bnoordhuis/gyp/blob/master/LICENSE))
-* Ninja ([Apache License 2.0](https://github.com/ninja-build/ninja/blob/master/COPYING))
-* OpenAL Soft ([LGPL](https://github.com/kcat/openal-soft/blob/master/COPYING))
-* Opus codec ([BSD License](http://www.opus-codec.org/license/))
-* FFmpeg ([LGPL](https://www.ffmpeg.org/legal.html))
-* Guideline Support Library ([MIT License](https://github.com/Microsoft/GSL/blob/master/LICENSE))
-* Range-v3 ([Boost License](https://github.com/ericniebler/range-v3/blob/master/LICENSE.txt))
-* Open Sans font ([Apache License 2.0](http://www.apache.org/licenses/LICENSE-2.0.html))
-* Vazirmatn font ([SIL Open Font License 1.1](https://github.com/rastikerdar/vazirmatn/blob/master/OFL.txt))
-* Emoji alpha codes ([MIT License](https://github.com/emojione/emojione/blob/master/extras/alpha-codes/LICENSE.md))
-* xxHash ([BSD License](https://github.com/Cyan4973/xxHash/blob/dev/LICENSE))
-* QR Code generator ([MIT License](https://github.com/nayuki/QR-Code-generator#license))
-* CMake ([New BSD License](https://github.com/Kitware/CMake/blob/master/Copyright.txt))
-* Hunspell ([LGPL](https://github.com/hunspell/hunspell/blob/master/COPYING.LESSER))
-* Ada ([Apache License 2.0](https://github.com/ada-url/ada/blob/main/LICENSE-APACHE))
-* zxcvbn-c ([MIT License](https://github.com/tsyrogit/zxcvbn-c/blob/master/LICENSE.txt))
-* twidget ([BSD 3-Clause License](https://github.com/TelegramMessenger/twidget/blob/main/LICENSE))
-* litehtml ([BSD 3-Clause License](https://github.com/litehtml/litehtml/blob/master/LICENSE))
-* Gumbo ([Apache License 2.0](https://github.com/google/gumbo-parser/blob/master/COPYING))
-* QuickJS-ng ([MIT License](https://github.com/quickjs-ng/quickjs/blob/master/LICENSE))
-* FrequencyWords by Hermit Dave ([Creative Commons Attribution-ShareAlike 4.0](https://creativecommons.org/licenses/by-sa/4.0/))
+## Disclaimer
 
-## Build instructions
+* Unofficial. Not affiliated with or endorsed by Telegram. Do not use Telegram's name or
+  logo for this fork.
+* The patch removes the widget JavaScript execution path. Other attack surfaces of the
+  client (as in any messenger) remain — **upstream security updates are still required**.
+* Distributed under the same terms as upstream: GPLv3 with OpenSSL exception.
 
-* [Windows (32-bit and 64-bit)][win]
-* [macOS][mac]
-* [GNU/Linux using Docker][linux]
+---
 
-[//]: # (LINKS)
-[telegram]: https://telegram.org
-[telegram_desktop]: https://desktop.telegram.org
-[telegram_api]: https://core.telegram.org
-[telegram_proto]: https://core.telegram.org/mtproto
-[license]: LICENSE
-[win]: docs/building-win.md
-[mac]: docs/building-mac.md
-[linux]: docs/building-linux.md
-[preview_image]: https://github.com/telegramdesktop/tdesktop/blob/dev/docs/assets/preview.png "Preview of Telegram Desktop"
-[preview_image_url]: https://raw.githubusercontent.com/telegramdesktop/tdesktop/dev/docs/assets/preview.png
+## На русском
 
-## Thanks to
+Это **неофициальный форк Telegram Desktop, в котором виджеты в сообщениях не исполняют
+JavaScript**. Зачем: виджеты — это HTML + JS в песочнице QuickJS внутри клиента;
+публичные эксплойты выполняли произвольный код **при одном лишь просмотре сообщения**
+(7.4.1 / 7.4.2, известные вектора исправлены в 7.4.3), движок QuickJS-ng регулярно
+получает новые memory-safety баги, а отключить виджеты в настройках нельзя.
 
-<a href="https://depot.dev">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://depot.dev/assets/brand/1693758816/depot-logo-horizontal-on-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset="https://depot.dev/assets/brand/1693758816/depot-logo-horizontal-on-light.svg">
-    <img alt="Depot" src="https://depot.dev/assets/brand/1693758816/depot-logo-horizontal-on-light.svg" width="150">
-  </picture>
-</a>
+Форк снимает весь класс атак минимальным патчем: виджет-сообщения показываются карточкой
+«unsupported message», JS-рантайм не создаётся никогда. Сборки (Linux / Windows / macOS)
+собираются в Actions, автообновление отключено.
 
-CI infrastructure sponsored by [Depot](https://depot.dev) — fast GitHub Actions runners.
+**Чего мы ждём от официального Telegram** (и надеемся, что это появится — тогда форк можно
+будет закрыть):
 
+1. **Загрузка виджета по клику** — карточка «запустить интерактивный виджет?» вместо
+   автоматического выполнения JS при просмотре сообщения (как «нажмите, чтобы загрузить»
+   у больших медиа). Одно это превращает 0-click RCE в осознанное действие пользователя.
+2. **Переключатель в настройках** — выключить виджеты полностью или по чатам.
+3. В идеале — изоляция движка виджетов в отдельном процессе, как уже сделано для
+   веб-приложений ботов.
+
+Подробнее: `docs/fork-nowidgets.md`. Проверка патча: `tools/verify-nowidgets.sh`.
+
+[tdesktop]: https://github.com/telegramdesktop/tdesktop
+[quickjs]: https://github.com/quickjs-ng/quickjs
+[actions]: https://github.com/nyakze/tdesktop-nowidgets/actions
+[api_credentials]: https://core.telegram.org/api/obtaining_api_id

@@ -104,6 +104,9 @@ gh secret set TDESKTOP_API_HASH   # значение вводится в prompt
    ./tools/verify-nowidgets.sh  # убедиться, что патч пережил ребейз
    ```
 
+   Конфликты по `README.md` ожидаемы (он намеренно заменён на описание форка) —
+   решайте в пользу своей версии (`git checkout --ours README.md`).
+
 2. **Мониторинг безопасности** (форк без обновлений опаснее официального клиента):
    * релизы https://github.com/telegramdesktop/tdesktop/releases ;
    * https://github.com/quickjs-ng/quickjs/issues ;
