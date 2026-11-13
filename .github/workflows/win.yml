@@ -58,10 +58,12 @@ jobs:
       matrix:
         # FORK: x64 + Qt6 only. The arm64 leg is broken in the current
         # upstream dependency stack (dav1d vs new MSVC on windows-11-arm),
-        # x64_x86 and Qt5 legs are not needed for the fork.
+        # x64_x86 and Qt5 legs are not needed for the fork. A single
+        # generator leg keeps the cold-cache disk usage under the limit
+        # of the standard windows runner.
         arch: [x64]
         qt: [qt6]
-        generator: ["", "Ninja Multi-Config"]
+        generator: [""]
 
     env:
       UPLOAD_ARTIFACT: "true"
@@ -73,6 +75,16 @@ jobs:
         shell: cmd
 
     steps:
+      - name: Free up disk space.
+        shell: powershell
+        run: |
+          Remove-Item -Recurse -Force "C:\Android" -ErrorAction SilentlyContinue
+          Remove-Item -Recurse -Force "C:\Program Files\dotnet" -ErrorAction SilentlyContinue
+          Remove-Item -Recurse -Force "C:\Program Files\MongoDB" -ErrorAction SilentlyContinue
+          Remove-Item -Recurse -Force "C:\Program Files\MySQL" -ErrorAction SilentlyContinue
+          Remove-Item -Recurse -Force "C:\Program Files\PostgreSQL" -ErrorAction SilentlyContinue
+          Get-PSDrive C
+
       - name: Prepare directories.
         run: |
           mkdir %userprofile%\TBuild\Libraries
