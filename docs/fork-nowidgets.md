@@ -76,6 +76,24 @@
 Сборка под Windows/macOS — по `docs/building-win.md` / `docs/building-mac.md`,
 с теми же двумя флагами: `TDESKTOP_API_ID/HASH` и `DESKTOP_APP_DISABLE_AUTOUPDATE=ON`.
 
+## Сборка через GitHub Actions (все платформы сразу)
+
+В `.github/workflows/{linux,win,mac}.yml` настроена сборка **Release для Linux, Windows и macOS**
+на стандартных раннерах (бесплатно для публичного репо) с `DESKTOP_APP_DISABLE_AUTOUPDATE=ON`.
+
+Перед первым запуском добавьте креды в секреты репозитория (они не видны в логах и не попадают в git):
+
+```bash
+gh secret set TDESKTOP_API_ID     # значение вводится в prompt
+gh secret set TDESKTOP_API_HASH   # значение вводится в prompt
+```
+
+Сборка запускается на пуш в ветку (или вручную: Actions → Linux./Windows./macOS. → Run workflow).
+Готовые бинарники — в артефактах запуска (хранятся 30 дней).
+
+Для личного использования достаточно Actions: локальная сборка нужна только если хотите
+собирать без CI (см. выше) — она требует ~40 GB диска и много часов.
+
 ## Поддержка форка (важнее самого патча)
 
 1. **Регулярно мержите апстрим** (раз в 1–2 недели или сразу после security-релизов):
