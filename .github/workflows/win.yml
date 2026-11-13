@@ -83,6 +83,12 @@ jobs:
           Remove-Item -Recurse -Force "C:\Program Files\MongoDB" -ErrorAction SilentlyContinue
           Remove-Item -Recurse -Force "C:\Program Files\MySQL" -ErrorAction SilentlyContinue
           Remove-Item -Recurse -Force "C:\Program Files\PostgreSQL" -ErrorAction SilentlyContinue
+          Remove-Item -Recurse -Force "C:\ghc" -ErrorAction SilentlyContinue
+          Remove-Item -Recurse -Force "C:\julia" -ErrorAction SilentlyContinue
+          Remove-Item -Recurse -Force "C:\SeleniumWebDrivers" -ErrorAction SilentlyContinue
+          Remove-Item -Recurse -Force "C:\Miniconda" -ErrorAction SilentlyContinue
+          Remove-Item -Recurse -Force "C:\ProgramData\Miniconda" -ErrorAction SilentlyContinue
+          Get-ChildItem "C:\hostedtoolcache" -Directory | Where-Object { $_.Name -notlike "Python*" } | ForEach-Object { Remove-Item -Recurse -Force $_.FullName -ErrorAction SilentlyContinue }
           Get-PSDrive C
 
       - name: Prepare directories.
