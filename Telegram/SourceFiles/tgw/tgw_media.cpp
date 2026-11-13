@@ -235,18 +235,13 @@ bool WidgetMedia::updateSentMedia(const MTPMessageMedia &media) {
 
 std::unique_ptr<HistoryView::Media> WidgetMedia::createView(
 		not_null<HistoryView::Element*> message,
-		not_null<HistoryItem*> realParent,
-		HistoryView::Element *replacing) {
-	const auto &html = this->html();
-	if (!html.isEmpty()) {
-		return std::make_unique<HistoryView::HtmlWidget>(
-			message,
-			realParent,
-			_fields.anchors,
-			html,
-			context(),
-			replacing);
-	}
+		[[maybe_unused]] not_null<HistoryItem*> realParent,
+		[[maybe_unused]] HistoryView::Element *replacing) {
+	// FORK (nowidgets): widgets are disabled. The HTML/JS runtime
+	// (HistoryView::HtmlWidget -> Tgw::Runtime -> QuickJS) must never be
+	// instantiated here, so hostile widget scripts cannot execute.
+	// This is the only construction site of HtmlWidget in the codebase.
+	// See docs/fork-nowidgets.md for the full picture and maintenance.
 	return std::make_unique<HistoryView::UnsupportedWidget>(message);
 }
 
