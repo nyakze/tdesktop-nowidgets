@@ -88,7 +88,7 @@ jobs:
           Remove-Item -Recurse -Force "C:\SeleniumWebDrivers" -ErrorAction SilentlyContinue
           Remove-Item -Recurse -Force "C:\Miniconda" -ErrorAction SilentlyContinue
           Remove-Item -Recurse -Force "C:\ProgramData\Miniconda" -ErrorAction SilentlyContinue
-          Get-ChildItem "C:\hostedtoolcache" -Directory | Where-Object { $_.Name -notlike "Python*" } | ForEach-Object { Remove-Item -Recurse -Force $_.FullName -ErrorAction SilentlyContinue }
+          Get-ChildItem "C:\hostedtoolcache\windows" -Directory | Where-Object { $_.Name -notlike "Python*" } | ForEach-Object { Remove-Item -Recurse -Force $_.FullName -ErrorAction SilentlyContinue }
           Get-PSDrive C
 
       - name: Prepare directories.
