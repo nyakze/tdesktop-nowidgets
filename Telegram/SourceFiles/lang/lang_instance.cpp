@@ -545,6 +545,7 @@ void Instance::fillFromSerialized(
 	for (auto i = 0, count = nonDefaultValuesCount * 2; i != count; i += 2) {
 		applyValue(nonDefaultStrings[i], nonDefaultStrings[i + 1]);
 	}
+	applyForkBranding();
 	updatePluralRules();
 	updateChoosingStickerReplacement();
 
