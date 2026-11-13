@@ -560,6 +560,24 @@ void Instance::loadFromContent(const QByteArray &content) {
 	} else if (!loader.warnings().isEmpty()) {
 		LOG(("Lang load warnings: %1").arg(loader.warnings()));
 	}
+	applyForkBranding();
+}
+
+void Instance::applyForkBranding() {
+	// FORK (NoWidgetGram): force brand strings on top of any language pack.
+	// Cloud packs served by Telegram override the compiled base strings,
+	// so upstream's "Official ..." texts would otherwise survive. The
+	// values below go through FileParser like regular lang strings.
+	static const auto kBranding = QByteArray(
+		"\"lng_about_text1\" = \"Free messaging app based on {api_link}\\n"
+		"for speed and security.\";\n"
+		"\"lng_intro_about\" = \"Welcome to NoWidgetGram.\\n"
+		"It's fast and secure.\";\n");
+	Lang::FileParser loader(kBranding, [this](
+			QLatin1String key,
+			const QByteArray &value) {
+		applyValue(QByteArray(key.data(), key.size()), value);
+	});
 }
 
 void Instance::fillFromCustomContent(
