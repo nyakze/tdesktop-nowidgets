@@ -45,8 +45,10 @@ on click, or a settings toggle), this fork would no longer be necessary.
 
 ## Disclaimer
 
-* Unofficial. Not affiliated with or endorsed by Telegram. Telegram's name and logo are
-  not used for this fork.
+* Unofficial. Not affiliated with or endorsed by Telegram. The name "Telegram" is used
+  only to refer to the original product. Note that the build compiles upstream resources
+  unmodified and therefore ships with the original application name and icons — this is
+  a personal build of the open-source client, not an official Telegram product.
 * The patch removes the widget JavaScript execution path only. Other attack surfaces of
   the client remain, as in any messenger — upstream security updates are still required.
 * Distributed under the same terms as upstream: GPLv3 with OpenSSL exception.
