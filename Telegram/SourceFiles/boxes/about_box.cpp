@@ -36,7 +36,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 namespace {
 
 rpl::producer<TextWithEntities> Text1() {
-	return rpl::single({ .text = "NoWidgetGram based on the Telegram Desktop." });
+	return rpl::single({ .text =
+		"NoWidgetGram is a fork of Telegram Desktop with widget JavaScript disabled." });
 }
 
 rpl::producer<TextWithEntities> Text2() {
