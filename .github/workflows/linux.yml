@@ -127,7 +127,7 @@ jobs:
       # actions/cache, which skips saving when a later step fails. Without
       # this, every failed run re-builds the ~2h dependency image from zero.
       - name: Save Libraries cache.
-        if: success()
+        if: success() && steps.cache-libs.outputs.cache-hit != 'true'
         uses: actions/cache/save@v6
         with:
           path: |
