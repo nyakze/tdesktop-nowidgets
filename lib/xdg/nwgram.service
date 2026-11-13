@@ -1,0 +1,3 @@
+[D-BUS Service]
+Name=nwgram
+Exec=@CMAKE_INSTALL_FULL_BINDIR@/NoWidgetGram
