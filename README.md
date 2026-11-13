@@ -29,8 +29,8 @@ on click, or a settings toggle), this fork would no longer be necessary.
 
 Prebuilt binaries are on the [Releases][releases] page:
 
-* `NoWidgetGram-linux-x64` — Linux (x86-64)
-* `NoWidgetGram-windows-x64` — Windows (x64)
+* `NoWidgetGram-linux` — Linux (x86-64)
+* `NoWidgetGram-windows` — Windows (x64)
 * `NoWidgetGram-macos` — macOS
 
 The application is branded **NoWidgetGram** (own name and icon) and keeps its profile
