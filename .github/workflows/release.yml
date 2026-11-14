@@ -80,7 +80,14 @@ jobs:
         run: |
           set -euo pipefail
           MAC_BIN=$(find work/MacOS. -type f -path '*NoWidgetGram.app/Contents/MacOS/*' | head -1)
-          MAC_ARCH=$(file -b "$MAC_BIN")
+          ARCHS=$(file -b "$MAC_BIN" | grep -oE 'x86_64|arm64' | sort -u | tr '\n' ' ' | sed 's/ $//')
+          if [ -z "$ARCHS" ]; then
+            MAC_ARCH="unknown (see archive)"
+          elif echo "$ARCHS" | grep -q ' '; then
+            MAC_ARCH="universal ($ARCHS)"
+          else
+            MAC_ARCH="$ARCHS"
+          fi
           echo "mac_arch=$MAC_ARCH" >> "$GITHUB_OUTPUT"
 
       - name: Create release tag at the built commit.
