@@ -5,7 +5,10 @@ setting up code signing via SignPath Foundation. Until the first signed release
 is published, all binaries are unsigned — this page describes how signing will
 work once it is enabled.
 
-Free code signing provided by SignPath.io, certificate by SignPath Foundation.
+Once signing is active, the following attribution will apply (this is the
+wording required by SignPath Foundation terms):
+
+> Free code signing provided by SignPath.io, certificate by SignPath Foundation.
 
 ## What is signed
 
@@ -51,7 +54,10 @@ All team members use multi-factor authentication for GitHub.
 **Статус: подпись ещё не активна.** Проект настраивает подпись через SignPath
 Foundation. Пока первый подписанный релиз не выпущен, все бинарники неподписаны.
 
-Бесплатная подпись предоставлена SignPath.io, сертификат — SignPath Foundation.
+После активации подписи будет действовать следующая атрибуция (обязательная
+формулировка по условиям SignPath Foundation):
+
+> Бесплатная подпись предоставлена SignPath.io, сертификат — SignPath Foundation.
 
 **Что подписывается:** только релизные артефакты, собранные CI (GitHub Actions)
 из исходников этого репозитория (`NoWidgetGram` для Linux, `NoWidgetGram.exe`
