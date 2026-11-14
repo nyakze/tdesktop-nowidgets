@@ -31,11 +31,17 @@ if grep -rln "make_unique<Tgw::Runtime>" "$SRC" --include="*.cpp" | grep -v "his
     fail=1
 fi
 
-echo "==> 5. Auto-update must stay disabled in the build script"
+echo "==> 5. Auto-update must stay disabled in build scripts and CI"
 if ! grep -q "DESKTOP_APP_DISABLE_AUTOUPDATE=ON" build-fork.sh; then
     echo "FAIL: build-fork.sh lost DESKTOP_APP_DISABLE_AUTOUPDATE=ON"
     fail=1
 fi
+for wf in .github/workflows/linux.yml .github/workflows/win.yml .github/workflows/mac.yml; do
+    if ! grep -q "DESKTOP_APP_DISABLE_AUTOUPDATE=ON" "$wf"; then
+        echo "FAIL: $wf lost DESKTOP_APP_DISABLE_AUTOUPDATE=ON"
+        fail=1
+    fi
+done
 
 if [[ $fail -ne 0 ]]; then
     echo

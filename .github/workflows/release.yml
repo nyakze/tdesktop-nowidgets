@@ -121,13 +121,13 @@ jobs:
           message widgets (widgets render as a static "unsupported message" card).
           Based on Telegram Desktop ${{ inputs.upstream_version }}.
 
-          ### Build configuration — please read
+          ### Build configuration
 
           | Archive | Build | Notes |
           |---|---|---|
-          | \`NoWidgetGram-linux.tar.gz\` | Release | normal size/behavior |
-          | \`NoWidgetGram-windows.zip\` | **Debug** | large binary (~600 MB unpacked), slower, no optimizations — temporary compromise (see docs/fork-nowidgets.md roadmap) |
-          | \`NoWidgetGram-macos.zip\` | **Debug** | same as Windows |
+          | \`NoWidgetGram-linux.tar.gz\` | Release | |
+          | \`NoWidgetGram-windows.zip\` | Release | |
+          | \`NoWidgetGram-macos.zip\` | Release | universal (x86_64 + arm64) |
 
           macOS binary: ${{ steps.facts.outputs.mac_arch }}
 
