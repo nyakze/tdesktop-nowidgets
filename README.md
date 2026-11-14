@@ -73,6 +73,7 @@ in the `nwgram` working directory, separately from official Telegram Desktop.
   NoWidgetGram with its own name and icons.
 * The patch removes the widget JavaScript execution path only. Other attack surfaces of
   the client remain, as in any messenger — upstream security updates are still required.
+* The application collects no user data — see [PRIVACY.md](PRIVACY.md).
 * Distributed under the same terms as upstream: GPLv3 with OpenSSL exception.
 
 ---
