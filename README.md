@@ -45,7 +45,7 @@ Prebuilt binaries are on the [Releases][releases] page:
 * `NoWidgetGram-macos` — macOS
 
 The application is branded **NoWidgetGram** (own name and icon) and keeps its profile
-in the `nwgram` working directory, separately from official Telegram Desktop.
+separately from official Telegram Desktop.
 
 ## Builds
 
@@ -110,7 +110,7 @@ JS-рантайм не создаётся никогда. Всё остальн�
 
 Сборки (Linux / Windows / macOS) собираются в Actions, автообновление отключено.
 Готовые бинарники — на странице [Releases][releases]; приложение называется **NoWidgetGram**
-(своё имя и иконка) и хранит профиль в отдельном рабочем каталоге `nwgram`.
+(своё имя и иконка) и хранит профиль отдельно от официального Telegram Desktop.
 Подробнее: `docs/fork-nowidgets.md`. Проверка патча: `tools/verify-nowidgets.sh`.
 
 [tdesktop]: https://github.com/telegramdesktop/tdesktop

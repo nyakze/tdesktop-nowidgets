@@ -137,8 +137,6 @@ jobs:
             Gatekeeper will warn.
           * Auto-update is disabled: this build will never replace itself with the
             official Telegram Desktop.
-          * Profile data lives in the \`nwgram\` working directory, separately from
-            official Telegram Desktop.
 
           ### Verify
 
