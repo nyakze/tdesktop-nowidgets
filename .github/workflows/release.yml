@@ -145,9 +145,8 @@ jobs:
           ---
 
           Неофициальный форк Telegram Desktop: виджеты в сообщениях не исполняют
-          JavaScript. Windows и macOS — **Debug-сборки** (большой размер .exe,
-          без оптимизаций), Linux — Release. Бинарники не подписаны (подпись
-          настраивается). Подробности: README.md.
+          JavaScript. Linux, Windows и macOS — Release-сборки. Бинарники не
+          подписаны. Подробности: README.md.
           EOF
           if [ "${{ inputs.prerelease }}" = "true" ]; then
             PRE="--prerelease"
