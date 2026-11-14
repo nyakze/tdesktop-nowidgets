@@ -28,6 +28,11 @@ exploits appears to be mitigated server-side
 though the client-side attack surface is still being discussed upstream. The fork is
 kept as a precaution.
 
+**Why not just use an older version without widgets?** Because upstream keeps fixing
+other bugs and vulnerabilities, and adding features and improvements. Staying on an old
+version means missing all of those. This fork removes the widget attack surface while
+staying on the current release.
+
 If the official client gains a built-in control over widgets (for example, loading them
 on click, or a settings toggle), this fork would no longer be necessary.
 
@@ -93,6 +98,11 @@ JS-рантайм не создаётся никогда. Всё остальн�
 ([комментарий в issue](https://github.com/telegramdesktop/tdesktop/issues/31619#issuecomment-6860672291)),
 однако клиентская поверхность атак ещё обсуждается в апстриме. Форк остаётся как
 подстраховка.
+
+**Почему просто не использовать старую версию без виджетов?** Потому что в апстриме
+постоянно исправляются другие уязвимости и баги, добавляются фичи и улучшения. Старая
+версия означает отказ от всего этого. Форк же убирает поверхность атак виджетов,
+оставаясь на актуальной версии.
 
 Если в официальном клиенте появится встроенная регулировка виджетов (например,
 загрузка по клику или переключатель в настройках), форк станет не нужен.
