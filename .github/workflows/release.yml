@@ -45,7 +45,17 @@ jobs:
               exit 1
             fi
             echo "Downloading '$name' artifacts from run $RUN..."
-            gh run download "$RUN" --repo "$GITHUB_REPOSITORY" -D "work/$name"
+            ARTIFACTS=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN/artifacts" \
+              --jq '[.artifacts[] | select(.name | startswith("NoWidgetGram")) | .name] | .[]')
+            if [ -z "$ARTIFACTS" ]; then
+              echo "ERROR: no NoWidgetGram artifacts in run $RUN"
+              exit 1
+            fi
+            while IFS= read -r aname; do
+              [ -z "$aname" ] && continue
+              echo "  artifact: $aname"
+              gh run download "$RUN" --repo "$GITHUB_REPOSITORY" -n "$aname" -D "work/$name"
+            done <<< "$ARTIFACTS"
           done
           find work -maxdepth 3 | head -40
 
@@ -125,6 +135,7 @@ jobs:
           fi
           gh release create "$TAG" dist/NoWidgetGram-linux.tar.gz dist/NoWidgetGram-windows.zip dist/NoWidgetGram-macos.zip dist/SHA256SUMS.txt \
             --repo "$GITHUB_REPOSITORY" \
+            --target "${{ inputs.source_sha }}" \
             --title "NoWidgetGram $VERSION" \
             --notes-file notes.md \
             $PRE
