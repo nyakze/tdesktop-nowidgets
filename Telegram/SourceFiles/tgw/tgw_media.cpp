@@ -241,7 +241,7 @@ std::unique_ptr<HistoryView::Media> WidgetMedia::createView(
 	// (HistoryView::HtmlWidget -> Tgw::Runtime -> QuickJS) must never be
 	// instantiated here, so hostile widget scripts cannot execute.
 	// This is the only construction site of HtmlWidget in the codebase.
-	// The patch is maintained against upstream 7.4.3.
+	// The patch is maintained against upstream 7.4.4.
 	// See docs/fork-nowidgets.md for the full picture and maintenance.
 	return std::make_unique<HistoryView::UnsupportedWidget>(message);
 }
