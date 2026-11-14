@@ -1,8 +1,11 @@
 # Code Signing Policy
 
-**Status: code signing is not active yet.** This project is in the process of
-setting up code signing via SignPath Foundation. Until the first signed release
-is published, all binaries are unsigned — this page describes how signing will
+**Status: code signing is not active yet.** The SignPath Foundation application
+(November 2026) was declined: the project does not yet show enough public
+visibility. Signing may be revisited later — either by reapplying to the
+SignPath Foundation once the project is more widely known, or via a paid
+SignPath subscription / an own certificate. Until the first signed release is
+published, all binaries are unsigned — this page describes how signing will
 work once it is enabled.
 
 Once signing is active, the following attribution will apply (this is the
@@ -51,8 +54,11 @@ All team members use multi-factor authentication for GitHub.
 
 # Политика подписи (рус.)
 
-**Статус: подпись ещё не активна.** Проект настраивает подпись через SignPath
-Foundation. Пока первый подписанный релиз не выпущен, все бинарники неподписаны.
+**Статус: подпись ещё не активна.** Заявка в SignPath Foundation (ноябрь 2026)
+отклонена: проекту пока не хватает публичной видимости. Вопрос подписи можно
+будет вернуть позже (повторная заявка, платная подписка или собственный
+сертификат). Пока первый подписанный релиз не выпущен, все бинарники
+неподписаны.
 
 После активации подписи будет действовать следующая атрибуция (обязательная
 формулировка по условиям SignPath Foundation):
