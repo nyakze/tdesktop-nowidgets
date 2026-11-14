@@ -137,3 +137,6 @@ Telegram для этого форка. `api_id`/`api_hash` — ваши личн
   и Release-линковка на нём падает (LNK1181/LNK2038). Цена — большие артефакты
   (~600 МБ .exe на Windows). Задача: починить Release-линковку (пути к `.lib` в
   prepare.py, выравнивание MSVC-рантайма) либо собирать Qt в Release.
+* **Подпись приложений.** Сейчас бинарники не подписаны — Windows ругается (SmartScreen),
+  macOS потребует код-подпись и notarization. Нужен сертификат (для Windows — Authenticode,
+  для macOS — Developer ID) и подпись в CI.
