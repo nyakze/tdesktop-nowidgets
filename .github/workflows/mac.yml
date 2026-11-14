@@ -57,6 +57,10 @@ jobs:
       UPLOAD_ARTIFACT: "true"
       ONLY_CACHE: "false"
       PREPARE_PATH: "Telegram/build/prepare/prepare.py"
+      # FORK: the prepared Libraries tree depends on these arguments, so they
+      # are part of the cache key; otherwise an exact hit restores a tree built
+      # with different arguments and the rebuild never gets saved.
+      PREPARE_ARGS: "silent"
 
     steps:
       - name: Get repository name.
@@ -90,12 +94,12 @@ jobs:
           path: |
             Libraries
             ThirdParty
-          key: ${{ runner.OS }}-libs-${{ hashFiles(format('{0}/{1}', env.REPO_NAME, env.PREPARE_PATH)) }}
+          key: ${{ runner.OS }}-libs-${{ env.PREPARE_ARGS }}-${{ hashFiles(format('{0}/{1}', env.REPO_NAME, env.PREPARE_PATH)) }}
           restore-keys: ${{ runner.OS }}-libs-
 
       - name: Libraries.
         run: |
-          ./$REPO_NAME/Telegram/build/prepare/mac.sh silent
+          ./$REPO_NAME/Telegram/build/prepare/mac.sh $PREPARE_ARGS
 
       - name: Free up some disk space.
         # FORK: */out/src/* and */local/src/* are kept — they hold generated

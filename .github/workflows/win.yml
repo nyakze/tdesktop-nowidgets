@@ -69,6 +69,10 @@ jobs:
       UPLOAD_ARTIFACT: "true"
       ONLY_CACHE: "false"
       PREPARE_PATH: "Telegram/build/prepare/prepare.py"
+      # FORK: the prepared Libraries tree depends on these arguments, so they
+      # are part of the cache key; otherwise an exact hit restores a tree built
+      # with different arguments and the rebuild never gets saved.
+      PREPARE_ARGS: "silent ${{ matrix.qt }}"
 
     defaults:
       run:
@@ -130,6 +134,7 @@ jobs:
 
           echo "$(sha256sum $TBUILD/$REPO_NAME/$PREPARE_PATH | awk '{ print $1 }')" >> CACHE_KEY.txt
           echo "$SDK" >> CACHE_KEY.txt
+          echo "prepare-args: $PREPARE_ARGS" >> CACHE_KEY.txt
           echo "CACHE_KEY=$(sha256sum CACHE_KEY.txt | awk '{ print $1 }')" >> $GITHUB_ENV
 
           echo "Configurate git for cherry-picks."
@@ -195,7 +200,7 @@ jobs:
 
       - name: Libraries.
         run: |
-          %TBUILD%\%REPO_NAME%\Telegram\build\prepare\win.bat silent ${{ matrix.qt }}
+          %TBUILD%\%REPO_NAME%\Telegram\build\prepare\win.bat %PREPARE_ARGS%
 
       - name: Read configuration matrix.
         shell: bash
