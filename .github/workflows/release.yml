@@ -1,0 +1,130 @@
+name: Make release.
+
+# Packages the CI artifacts of a given commit into a GitHub release.
+# Artifacts never leave GitHub — no local downloading needed.
+# Usage: Actions -> Make release -> Run workflow (fill in source_sha and tag).
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: 'Commit SHA whose successful builds to package (e.g. 61a297df2a)'
+        required: true
+      tag:
+        description: 'Release tag (e.g. v0.1.0)'
+        required: true
+      upstream_version:
+        description: 'Upstream Telegram Desktop version this release is based on'
+        required: false
+        default: '7.4.3'
+      prerelease:
+        description: 'Mark as pre-release (true/false)'
+        required: false
+        default: 'true'
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download build artifacts.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          SHA="${{ inputs.source_sha }}"
+          mkdir -p work
+          for name in Linux. Windows. MacOS.; do
+            RUN=$(gh run list --repo "$GITHUB_REPOSITORY" --limit 100 --json databaseId,name,headSha,conclusion \
+              --jq "[.[] | select(.name==\"$name\" and (.headSha|startswith(\"$SHA\")) and .conclusion==\"success\") | .databaseId][0] // \"\"")
+            if [ -z "$RUN" ] || [ "$RUN" = "null" ]; then
+              echo "ERROR: no successful '$name' run found for commit $SHA"
+              exit 1
+            fi
+            echo "Downloading '$name' artifacts from run $RUN..."
+            gh run download "$RUN" --repo "$GITHUB_REPOSITORY" -D "work/$name"
+          done
+          find work -maxdepth 3 | head -40
+
+      - name: Package artifacts.
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          LINUX_BIN=$(find work/Linux. -type f -name 'NoWidgetGram' | head -1)
+          WIN_BIN=$(find work/Windows. -type f -name 'NoWidgetGram.exe' | head -1)
+          MAC_APP=$(find work/MacOS. -type d -name 'NoWidgetGram.app' | head -1)
+          test -n "$LINUX_BIN" && test -n "$WIN_BIN" && test -n "$MAC_APP"
+
+          tar -czf dist/NoWidgetGram-linux.tar.gz -C "$(dirname "$LINUX_BIN")" NoWidgetGram
+          (cd "$(dirname "$WIN_BIN")" && zip -q "$OLDPWD/dist/NoWidgetGram-windows.zip" NoWidgetGram.exe)
+          (cd "$(dirname "$MAC_APP")" && zip -qr "$OLDPWD/dist/NoWidgetGram-macos.zip" NoWidgetGram.app)
+
+          (cd dist && sha256sum NoWidgetGram-* > SHA256SUMS.txt)
+          ls -lh dist
+
+      - name: Gather build facts for notes.
+        id: facts
+        run: |
+          set -euo pipefail
+          MAC_BIN=$(find work/MacOS. -type f -path '*NoWidgetGram.app/Contents/MacOS/*' | head -1)
+          MAC_ARCH=$(file -b "$MAC_BIN")
+          echo "mac_arch=$MAC_ARCH" >> "$GITHUB_OUTPUT"
+
+      - name: Create release.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${{ inputs.tag }}"
+          VERSION="${TAG#v}"
+          cat > notes.md <<EOF
+          ## NoWidgetGram $VERSION
+
+          Unofficial fork of Telegram Desktop with JavaScript execution disabled in
+          message widgets (widgets render as a static "unsupported message" card).
+          Based on Telegram Desktop ${{ inputs.upstream_version }}.
+
+          ### Build configuration — please read
+
+          | Archive | Build | Notes |
+          |---|---|---|
+          | \`NoWidgetGram-linux.tar.gz\` | Release | normal size/behavior |
+          | \`NoWidgetGram-windows.zip\` | **Debug** | large binary (~600 MB unpacked), slower, no optimizations — temporary compromise (see docs/fork-nowidgets.md roadmap) |
+          | \`NoWidgetGram-macos.zip\` | **Debug** | same as Windows |
+
+          macOS binary: ${{ steps.facts.outputs.mac_arch }}
+
+          ### Warnings
+
+          * Binaries are **not code-signed** yet: Windows SmartScreen and macOS
+            Gatekeeper will warn. Signing via SignPath Foundation is being set up
+            (see CODE_SIGNING.md).
+          * Auto-update is disabled: this build will never replace itself with the
+            official Telegram Desktop.
+          * Profile data lives in the \`nwgram\` working directory, separately from
+            official Telegram Desktop.
+
+          ### Verify
+
+          SHA256 checksums are in the \`SHA256SUMS.txt\` asset.
+
+          ---
+
+          Неофициальный форк Telegram Desktop: виджеты в сообщениях не исполняют
+          JavaScript. Windows и macOS — **Debug-сборки** (большой размер .exe,
+          без оптимизаций), Linux — Release. Бинарники не подписаны (подпись
+          настраивается). Подробности: README.md.
+          EOF
+          if [ "${{ inputs.prerelease }}" = "true" ]; then
+            PRE="--prerelease"
+          else
+            PRE=""
+          fi
+          gh release create "$TAG" dist/NoWidgetGram-linux.tar.gz dist/NoWidgetGram-windows.zip dist/NoWidgetGram-macos.zip dist/SHA256SUMS.txt \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "NoWidgetGram $VERSION" \
+            --notes-file notes.md \
+            $PRE
