@@ -11,7 +11,7 @@ on:
         description: 'Commit SHA whose successful builds to package (e.g. 61a297df2a)'
         required: true
       tag:
-        description: 'Release tag (e.g. v0.1.0)'
+        description: 'Release tag following upstream versioning (e.g. v7.4.3)'
         required: true
       upstream_version:
         description: 'Upstream Telegram Desktop version this release is based on'
@@ -83,6 +83,23 @@ jobs:
           MAC_ARCH=$(file -b "$MAC_BIN")
           echo "mac_arch=$MAC_ARCH" >> "$GITHUB_OUTPUT"
 
+      - name: Create release tag at the built commit.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # Note: the tag is created explicitly at the built commit instead of
+          # using 'gh release create --target'. Passing --target makes GitHub
+          # resolve the commit range for the release, and if that range touches
+          # workflow files it demands a 'workflows: write' permission which the
+          # GITHUB_TOKEN cannot be granted via workflow permissions.
+          if gh api -X POST "repos/$GITHUB_REPOSITORY/git/refs" \
+              -f ref="refs/tags/${{ inputs.tag }}" -f sha="${{ inputs.source_sha }}"; then
+            echo "Tag ${{ inputs.tag }} created at ${{ inputs.source_sha }}"
+          else
+            echo "Tag ${{ inputs.tag }} already exists — continuing"
+          fi
+
       - name: Create release.
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -135,7 +152,6 @@ jobs:
           fi
           gh release create "$TAG" dist/NoWidgetGram-linux.tar.gz dist/NoWidgetGram-windows.zip dist/NoWidgetGram-macos.zip dist/SHA256SUMS.txt \
             --repo "$GITHUB_REPOSITORY" \
-            --target "${{ inputs.source_sha }}" \
             --title "NoWidgetGram $VERSION" \
             --notes-file notes.md \
             $PRE
