@@ -133,9 +133,8 @@ jobs:
 
           ### Warnings
 
-          * Binaries are **not code-signed** yet: Windows SmartScreen and macOS
-            Gatekeeper will warn. Signing via SignPath Foundation is being set up
-            (see CODE_SIGNING.md).
+          * Binaries are **not code-signed**: Windows SmartScreen and macOS
+            Gatekeeper will warn.
           * Auto-update is disabled: this build will never replace itself with the
             official Telegram Desktop.
           * Profile data lives in the \`nwgram\` working directory, separately from

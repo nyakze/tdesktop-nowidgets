@@ -311,35 +311,7 @@ jobs:
           move %OUT%\NoWidgetGram.exe artifact/
           if exist %OUT%\Updater.exe move %OUT%\Updater.exe artifact/
 
-      # FORK: SignPath code signing (free for open source). Skipped unless
-      # the repository variable SIGNPATH_ORGANIZATION_ID is configured.
-      - name: Upload unsigned artifact for signing.
-        if: (env.UPLOAD_ARTIFACT == 'true') && (vars.SIGNPATH_ORGANIZATION_ID != '')
-        id: upload-unsigned-artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: unsigned-${{ env.ARTIFACT_NAME }}
-          path: artifact\
-          retention-days: 1
-
-      - name: Sign with SignPath.
-        if: (env.UPLOAD_ARTIFACT == 'true') && (vars.SIGNPATH_ORGANIZATION_ID != '')
-        uses: signpath/github-action-submit-signing-request@v3
-        with:
-          api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
-          organization-id: '${{ vars.SIGNPATH_ORGANIZATION_ID }}'
-          project-slug: 'nwgram'
-          signing-policy-slug: 'release-signing'
-          github-artifact-id: '${{ steps.upload-unsigned-artifact.outputs.artifact-id }}'
-          wait-for-completion: true
-          output-artifact-directory: 'signed-artifact'
-
-      - name: Use signed artifact.
-        if: (env.UPLOAD_ARTIFACT == 'true') && (vars.SIGNPATH_ORGANIZATION_ID != '')
-        run: |
-          rmdir /s /q artifact
-          move signed-artifact artifact
-
+      # FORK: SignPath code signing removed — see docs/fork-nowidgets.md.
       - uses: actions/upload-artifact@v7
         name: Upload artifact.
         if: (env.UPLOAD_ARTIFACT == 'true') || (github.ref == 'refs/heads/nightly')
