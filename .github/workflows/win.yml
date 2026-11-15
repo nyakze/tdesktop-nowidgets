@@ -287,6 +287,37 @@ jobs:
             ${{ env.LibrariesPath }}\cache_keys\[qQ]t[_-]*
           key: ${{ steps.cache-qt.outputs.cache-primary-key }}
 
+      - name: Enlarge the pagefile (MSVC PCH commit headroom).
+        # FORK: the tdesktop PCH is huge; every cl.exe that loads it commits
+        # ~2-3 GB of private memory. The Release build OOMs on the 16 GB
+        # windows runner with its tiny default pagefile —
+        # "C3859 Failed to create virtual memory for PCH" +
+        # "C1076 internal heap limit reached" (run 43647010406).
+        # Raising the pagefile maximum lifts the commit limit live.
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          try {
+            "Commit limit before: {0:N1}GB" -f ((Get-WmiObject Win32_OperatingSystem).TotalVirtualMemorySize/1MB)
+            $sys = Get-WmiObject -Class Win32_ComputerSystem -EnableAllPrivileges
+            if ($sys.AutomaticManagedPagefile) {
+              $sys.AutomaticManagedPagefile = $false
+              $sys.Put() | Out-Null
+            }
+            $pf = Get-WmiObject -Class Win32_PageFileSetting | Where-Object { $_.Name -ieq 'C:\pagefile.sys' }
+            if ($pf) {
+              $pf.InitialSize = 8192
+              $pf.MaximumSize = 24576
+              $pf.Put() | Out-Null
+            } else {
+              Set-WmiInstance -Class Win32_PageFileSetting -Arguments @{ Name = 'C:\pagefile.sys'; InitialSize = 8192; MaximumSize = 24576 } | Out-Null
+            }
+            Get-WmiObject Win32_PageFileSetting | Format-List Name, InitialSize, MaximumSize
+            "Commit limit after: {0:N1}GB (grows on demand up to RAM + pagefile max)" -f ((Get-WmiObject Win32_OperatingSystem).TotalVirtualMemorySize/1MB)
+          } catch {
+            Write-Host "::warning::Pagefile enlargement failed ($($_.Exception.Message)); continuing on the default pagefile. If MSVC OOMs on the PCH (C3859/C1076), lower the build --parallel."
+          }
+
       - name: Telegram Desktop build.
         if: env.ONLY_CACHE == 'false'
         run: |
@@ -306,7 +337,9 @@ jobs:
           -D DESKTOP_APP_DISABLE_CRASH_REPORTS=OFF ^
           %TDESKTOP_BUILD_DEFINE%
 
-          cmake --build ..\out --config Release --parallel
+          rem FORK: cap parallelism; more cl.exe than that exhausts the 16 GB
+          rem runner's commit limit on the Release PCH (C3859/C1076).
+          cmake --build ..\out --config Release --parallel 2
 
       - name: Move artifact.
         if: (env.UPLOAD_ARTIFACT == 'true') || (github.ref == 'refs/heads/nightly')
