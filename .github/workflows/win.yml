@@ -51,7 +51,10 @@ jobs:
 
   windows:
     name: Windows
-    runs-on: ${{ matrix.arch == 'arm64' && 'windows-11-arm' || ((github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/nightly') && 'depot-windows-latest-16' || 'windows-latest') }}
+    # FORK: depot-* runners belong to upstream's infra and are not available
+    # here (the fork has zero registered runners); a PR/tag/nightly run would
+    # queue forever. Always use the GitHub-hosted runner.
+    runs-on: windows-latest
 
     strategy:
       fail-fast: false
@@ -337,9 +340,9 @@ jobs:
           -D DESKTOP_APP_DISABLE_CRASH_REPORTS=OFF ^
           %TDESKTOP_BUILD_DEFINE%
 
-          rem FORK: cap parallelism; more cl.exe than that exhausts the 16 GB
-          rem runner's commit limit on the Release PCH (C3859/C1076).
-          cmake --build ..\out --config Release --parallel 2
+          rem FORK: full parallelism again — the pagefile step above lifts the
+          rem commit limit that the Release PCH used to exhaust (C3859/C1076).
+          cmake --build ..\out --config Release --parallel 4
 
       - name: Move artifact.
         if: (env.UPLOAD_ARTIFACT == 'true') || (github.ref == 'refs/heads/nightly')
