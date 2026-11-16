@@ -156,7 +156,7 @@ jobs:
       - name: Telegram Desktop build.
         if: env.ONLY_CACHE == 'false'
         run: |
-          cd $REPO_NAME/Telegram
+          cd $REPO_NAME
 
           DEFINE=""
           if [ -n "${{ matrix.defines }}" ]; then
@@ -169,22 +169,27 @@ jobs:
 
           ccache -z
 
-          # FORK: Ninja Multi-Config instead of Xcode — CMAKE_*_COMPILER_LAUNCHER
-          # is honored only by the Makefile and Ninja generators, and ccache is
-          # what turns repeated CI runs into minutes.
-          ./configure.sh \
-          -G "Ninja Multi-Config" \
-          -D CMAKE_CONFIGURATION_TYPES=Release \
-          -D CMAKE_COMPILE_WARNING_AS_ERROR=ON \
-          -D CMAKE_C_COMPILER_LAUNCHER=ccache \
-          -D CMAKE_CXX_COMPILER_LAUNCHER=ccache \
-          -D TDESKTOP_API_ID=${{ secrets.TDESKTOP_API_ID }} \
-          -D TDESKTOP_API_HASH=${{ secrets.TDESKTOP_API_HASH }} \
-          -D DESKTOP_APP_DISABLE_AUTOUPDATE=ON \
-          -D DESKTOP_APP_DISABLE_CRASH_REPORTS=OFF \
-          $DEFINE
+          # FORK: the Swift translation module cannot be built as a fat binary
+          # in a single pass, so each architecture is configured and built on
+          # its own (the recipe of Telegram/build/build_mac.py) and the trees
+          # are merged into one universal bundle with lipo.
+          for ARCH in arm64 x86_64; do
+            python3 Telegram/configure.py -GNinja -B "$PWD/out-$ARCH" \
+            -D CMAKE_BUILD_TYPE=Release \
+            -D CMAKE_OSX_ARCHITECTURES="x86_64;arm64" \
+            -D DESKTOP_APP_MAC_ARCH=$ARCH \
+            -D CMAKE_COMPILE_WARNING_AS_ERROR=ON \
+            -D CMAKE_C_COMPILER_LAUNCHER=ccache \
+            -D CMAKE_CXX_COMPILER_LAUNCHER=ccache \
+            -D TDESKTOP_API_ID=${{ secrets.TDESKTOP_API_ID }} \
+            -D TDESKTOP_API_HASH=${{ secrets.TDESKTOP_API_HASH }} \
+            -D DESKTOP_APP_DISABLE_AUTOUPDATE=ON \
+            -D DESKTOP_APP_DISABLE_CRASH_REPORTS=OFF \
+            $DEFINE
+            cmake --build "$PWD/out-$ARCH" --target Telegram --parallel
+          done
 
-          cmake --build ../out --config Release --parallel
+          ./tools/merge-mac-universal.sh out-arm64/Release out-x86_64/Release out/Release
 
           ccache --show-stats
 
