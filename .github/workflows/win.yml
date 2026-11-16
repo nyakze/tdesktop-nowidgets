@@ -403,16 +403,15 @@ jobs:
           echo "== obj dir exists: $(test -d "$DIR" && echo yes || echo no)"
           CMD=$(cd "$OUT" && ninja -t commands "$OBJ" | grep 'cl\.exe' | head -1)
           CLINE="${CMD#ccache }"
-          echo "== command: $CLINE"
           run_test() {
             echo "== $1"
-            (cd "$OUT" && cmd //c "$2") && echo RESULT-OK || echo RESULT-FAILED
+            printf '@echo off\r\n%s\r\n' "$2" > "$OUT/diag.cmd"
+            (cd "$OUT" && cmd //c diag.cmd) && echo RESULT-OK || echo RESULT-FAILED
           }
           run_test "plain cl as-is" "$CLINE"
-          run_test "plain cl without /MP" "${CLINE//\/MP /}"
           run_test "plain cl with short /Fo" "$(echo "$CLINE" | sed 's#/Fo[^ ]*#/Foshort-heif.obj#')"
-          run_test "plain cl without /Fd /FS" "$(echo "$CLINE" | sed 's#/Fd[^ ]*##; s# /FS##')"
-          run_test "plain cl minimal (no /external, no /w1)" "$(echo "$CLINE" | sed 's#/external:[^ ]*##g; s#/w1[0-9]* ##g')"
+          run_test "plain cl bare (no /MP,/Fd,/FS,/external,/w1,/wd)" "$(echo "$CLINE" | sed 's#/MP ##; s#/Fd[^ ]*##; s# /FS##; s#/external:[^ ]*##g; s#/w1[0-9]* ##g; s#/wd[0-9]* ##g')"
+          run_test "cl minimal: /nologo /TP /c source /Fo" "\"$(echo "$CLINE" | sed 's/ .*//')\" /nologo /TP /c C:\\Users\\runneradmin\\TBuild\\tdesktop-nowidgets\\Telegram\\ThirdParty\\kimageformats\\src\\imageformats\\heif.cpp /Fominimal-heif.obj"
 
       - name: Save ccache.
         # FORK: save on any outcome (except cancellation) — a failed run still
