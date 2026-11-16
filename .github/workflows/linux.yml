@@ -137,14 +137,11 @@ jobs:
             ${{ runner.temp }}/.mount-cache
           key: ${{ steps.cache-libs.outputs.cache-primary-key }}
 
-      - name: Restore Telegram Desktop cache.
-        id: cache-tdesktop
-        if: env.ONLY_CACHE == 'false'
-        uses: actions/cache/restore@v6
-        with:
-          path: ${{ env.CCACHE_DIR }}
-          key: ${{ runner.OS }}-tdesktop-${{ matrix.defines || 'null' }}-${{ github.run_id }}
-          restore-keys: ${{ runner.OS }}-tdesktop-${{ matrix.defines || 'null' }}-
+      # FORK: the compiler cache is not persisted for Linux — the build takes
+      # ~13 minutes anyway and the 10 GB repository cache budget is better
+      # spent on the Windows and macOS compiler caches and the dependency
+      # trees (a cache set that does not fit the budget gets evicted and
+      # forces multi-hour dependency rebuilds).
 
       - name: Telegram Desktop build.
         if: env.ONLY_CACHE == 'false'
@@ -180,32 +177,6 @@ jobs:
           -D DESKTOP_APP_DISABLE_AUTOUPDATE=ON \
           -D DESKTOP_APP_DISABLE_CRASH_REPORTS=OFF \
           $DEFINE
-
-      - name: Count ccache misses.
-        id: ccache-stats
-        if: env.ONLY_CACHE == 'false'
-        run: |
-          MISSES=$(ccache --print-stats | sed -n 's/^cache_miss\t//p' | head -1)
-          case "$MISSES" in (*[!0-9]*|'') MISSES=0;; esac
-          echo "misses=$MISSES" >> $GITHUB_OUTPUT
-          echo "ccache misses this run: $MISSES"
-
-      - name: Trim Telegram Desktop cache.
-        if: >
-          env.ONLY_CACHE == 'false'
-            && github.ref_name == github.event.repository.default_branch
-            && fromJSON(steps.ccache-stats.outputs.misses) > 300
-        run: ccache --evict-older-than 1d
-
-      - name: Save Telegram Desktop cache.
-        # FORK: save on any outcome (except cancellation) and on any branch —
-        # upstream only caches the default branch and only on big miss counts,
-        # which would throw away partial compile progress of failed runs.
-        if: ${{ !cancelled() && env.ONLY_CACHE == 'false' }}
-        uses: actions/cache/save@v6
-        with:
-          path: ${{ env.CCACHE_DIR }}
-          key: ${{ steps.cache-tdesktop.outputs.cache-primary-key }}
 
       - name: Check.
         if: env.ONLY_CACHE == 'false'

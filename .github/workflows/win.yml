@@ -80,8 +80,8 @@ jobs:
       # with different arguments and the rebuild never gets saved.
       PREPARE_ARGS: "silent ${{ matrix.qt }}"
       # FORK: cap the compiler cache so it stays inside the repository cache
-      # budget together with the Libraries trees.
-      CCACHE_MAXSIZE: "2G"
+      # budget together with the Libraries trees (~10 GB total).
+      CCACHE_MAXSIZE: "1900M"
       CCACHE_SLOPPINESS: "pch_defines,time_macros"
 
     defaults:

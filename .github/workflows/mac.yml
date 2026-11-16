@@ -64,8 +64,11 @@ jobs:
       # with different arguments and the rebuild never gets saved.
       PREPARE_ARGS: "silent"
       # FORK: cap the compiler cache so it stays inside the repository cache
-      # budget together with the Libraries trees.
-      CCACHE_MAXSIZE: "2G"
+      # budget together with the Libraries trees. Only the arm64 tree is
+      # cached: the per-architecture object sets do not both fit the budget,
+      # and a cache set smaller than the working set brings no hits on these
+      # full rebuilds.
+      CCACHE_MAXSIZE: "1800M"
       CCACHE_SLOPPINESS: "pch_defines,time_macros"
 
     steps:
@@ -174,6 +177,11 @@ jobs:
           # its own (the recipe of Telegram/build/build_mac.py) and the trees
           # are merged into one universal bundle with lipo.
           for ARCH in arm64 x86_64; do
+            if [ "$ARCH" = "arm64" ]; then
+              unset CCACHE_DISABLE
+            else
+              export CCACHE_DISABLE=1
+            fi
             python3 Telegram/configure.py -GNinja -B "$PWD/out-$ARCH" \
             -D CMAKE_BUILD_TYPE=Release \
             -D CMAKE_OSX_ARCHITECTURES="x86_64;arm64" \
