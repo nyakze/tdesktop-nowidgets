@@ -157,6 +157,9 @@ jobs:
           unzip -q "$RUNNER_TEMP/ccache.zip" -d "$RUNNER_TEMP/ccache-dist"
           echo "$RUNNER_TEMP/ccache-dist/ccache-4.13.6-windows-x86_64" >> $GITHUB_PATH
           echo "CCACHE_DIR=$RUNNER_TEMP/.ccache" >> $GITHUB_ENV
+          # FORK: per-invocation compiler logs, dumped on failure.
+          echo "CCACHE_DEBUG=1" >> $GITHUB_ENV
+          echo "CCACHE_DEBUG_DIR=$RUNNER_TEMP/ccache-debug" >> $GITHUB_ENV
 
       - name: Install VS 2026 Build Tools.
         if: matrix.arch == 'arm64'
@@ -342,7 +345,7 @@ jobs:
           key: ${{ runner.OS }}-ccache-${{ github.run_id }}
           restore-keys: ${{ runner.OS }}-ccache-
 
-      - name: Telegram Desktop build.
+      - name: Configure Telegram Desktop.
         if: env.ONLY_CACHE == 'false'
         run: |
           cd %TBUILD%\%REPO_NAME%\Telegram
@@ -365,11 +368,28 @@ jobs:
           -D DESKTOP_APP_DISABLE_CRASH_REPORTS=OFF ^
           %TDESKTOP_BUILD_DEFINE%
 
+      - name: Telegram Desktop build.
+        if: env.ONLY_CACHE == 'false'
+        run: |
           rem FORK: full parallelism again — the pagefile step above lifts the
           rem commit limit that the Release PCH used to exhaust (C3859/C1076).
-          cmake --build ..\out --config Release --parallel 4
+          cmake --build %TBUILD%\%REPO_NAME%\out --config Release --parallel 4
 
-          ccache --show-stats
+      - name: ccache stats.
+        if: env.ONLY_CACHE == 'false'
+        run: ccache --show-stats
+
+      - name: ccache debug logs.
+        if: failure() && env.ONLY_CACHE == 'false'
+        shell: bash
+        run: |
+          DIR="$(cygpath -u "$CCACHE_DEBUG_DIR")"
+          for f in "$DIR"/*.log; do
+            echo "== $f"
+            grep -E "Uncacheable|error|Error|Result:|Running" "$f" | head -10
+          done | head -100
+          echo "== cmd files"
+          head -5 "$DIR"/*.cmd 2>/dev/null | head -60
 
       - name: Save ccache.
         # FORK: save on any outcome (except cancellation) — a failed run still
