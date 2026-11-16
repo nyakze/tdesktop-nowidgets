@@ -374,7 +374,12 @@ jobs:
         run: |
           rem FORK: full parallelism again — the pagefile step above lifts the
           rem commit limit that the Release PCH used to exhaust (C3859/C1076).
-          cmake --build %TBUILD%\%REPO_NAME%\out --config Release --parallel 4
+          rem The build runs from a short subst drive: MSVC cannot write object
+          rem files under the long hashed paths CMake generates when the build
+          rem tree itself is deep ("C1083: Cannot open compiler generated
+          rem file: ''").
+          subst B: %TBUILD%\%REPO_NAME%\out
+          cmake --build B:\ --config Release --parallel 4
 
       - name: ccache stats.
         if: env.ONLY_CACHE == 'false'
@@ -397,6 +402,7 @@ jobs:
         shell: bash
         run: |
           OUT="$(cygpath -u "$TBUILD")/$REPO_NAME/out"
+          OUT_WIN="$TBUILD/$REPO_NAME/out"
           OBJ=$(cd "$OUT" && ninja -t targets all | grep 'heif.cpp.obj' | head -1 | cut -d: -f1)
           DIR="$OUT/$(dirname "$OBJ")"
           echo "== obj: $OBJ"
@@ -411,7 +417,10 @@ jobs:
           run_test "plain cl as-is" "$CLINE"
           run_test "plain cl with short /Fo" "$(echo "$CLINE" | sed 's#/Fo[^ ]*#/Foshort-heif.obj#')"
           run_test "plain cl bare (no /MP,/Fd,/FS,/external,/w1,/wd)" "$(echo "$CLINE" | sed 's#/MP ##; s#/Fd[^ ]*##; s# /FS##; s#/external:[^ ]*##g; s#/w1[0-9]* ##g; s#/wd[0-9]* ##g')"
-          run_test "cl minimal: /nologo /TP /c source /Fo" "\"$(echo "$CLINE" | sed 's/ .*//')\" /nologo /TP /c C:\\Users\\runneradmin\\TBuild\\tdesktop-nowidgets\\Telegram\\ThirdParty\\kimageformats\\src\\imageformats\\heif.cpp /Fominimal-heif.obj"
+          cmd //c "subst X: $OUT_WIN"
+          printf '@echo off\r\ncd /d X:\\\r\n%s\r\n' "$CLINE" > "$OUT/diag-subst.cmd"
+          echo "== plain cl from short subst drive X:"
+          (cd "$OUT" && cmd //c diag-subst.cmd) && echo RESULT-OK || echo RESULT-FAILED
 
       - name: Save ccache.
         # FORK: save on any outcome (except cancellation) — a failed run still
