@@ -397,20 +397,22 @@ jobs:
         shell: bash
         run: |
           OUT="$(cygpath -u "$TBUILD")/$REPO_NAME/out"
-          echo "== ninja $(ninja --version), CL=[$CL], _CL_=[${_CL_:-}]"
           OBJ=$(cd "$OUT" && ninja -t targets all | grep 'heif.cpp.obj' | head -1 | cut -d: -f1)
-          echo "== obj: $OBJ"
           DIR="$OUT/$(dirname "$OBJ")"
-          echo "== obj dir exists after the failed build: $(test -d "$DIR" && echo yes || echo no)"
-          CMD=$(cd "$OUT" && ninja -t commands "$OBJ" | head -1)
-          echo "== command: $CMD"
-          echo "== 1) plain cl (no ccache), as-is"
-          (cd "$OUT" && cmd //c "${CMD#ccache }") && echo RESULT-OK || echo RESULT-FAILED
-          echo "== 2) plain cl (no ccache), obj dir pre-created"
-          mkdir -p "$DIR"
-          (cd "$OUT" && cmd //c "${CMD#ccache }") && echo RESULT-OK || echo RESULT-FAILED
-          echo "== 3) via ccache, obj dir pre-created"
-          (cd "$OUT" && cmd //c "$CMD") && echo RESULT-OK || echo RESULT-FAILED
+          echo "== obj: $OBJ"
+          echo "== obj dir exists: $(test -d "$DIR" && echo yes || echo no)"
+          CMD=$(cd "$OUT" && ninja -t commands "$OBJ" | grep 'cl\.exe' | head -1)
+          CLINE="${CMD#ccache }"
+          echo "== command: $CLINE"
+          run_test() {
+            echo "== $1"
+            (cd "$OUT" && cmd //c "$2") && echo RESULT-OK || echo RESULT-FAILED
+          }
+          run_test "plain cl as-is" "$CLINE"
+          run_test "plain cl without /MP" "${CLINE//\/MP /}"
+          run_test "plain cl with short /Fo" "$(echo "$CLINE" | sed 's#/Fo[^ ]*#/Foshort-heif.obj#')"
+          run_test "plain cl without /Fd /FS" "$(echo "$CLINE" | sed 's#/Fd[^ ]*##; s# /FS##')"
+          run_test "plain cl minimal (no /external, no /w1)" "$(echo "$CLINE" | sed 's#/external:[^ ]*##g; s#/w1[0-9]* ##g')"
 
       - name: Save ccache.
         # FORK: save on any outcome (except cancellation) — a failed run still
