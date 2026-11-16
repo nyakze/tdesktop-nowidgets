@@ -189,7 +189,7 @@ jobs:
             cmake --build "$PWD/out-$ARCH" --target Telegram --parallel
           done
 
-          ./tools/merge-mac-universal.sh out-arm64/Release out-x86_64/Release out/Release
+          ./tools/merge-mac-universal.sh out-arm64 out-x86_64 out/Release
 
           ccache --show-stats
 
