@@ -158,6 +158,7 @@ jobs:
           echo "$RUNNER_TEMP/ccache-dist/ccache-4.13.6-windows-x86_64" >> $GITHUB_PATH
           echo "CCACHE_DIR=$RUNNER_TEMP/.ccache" >> $GITHUB_ENV
           # FORK: per-invocation compiler logs, dumped on failure.
+          mkdir -p "$RUNNER_TEMP/ccache-debug"
           echo "CCACHE_DEBUG=1" >> $GITHUB_ENV
           echo "CCACHE_DEBUG_DIR=$RUNNER_TEMP/ccache-debug" >> $GITHUB_ENV
 
@@ -390,6 +391,26 @@ jobs:
           done | head -100
           echo "== cmd files"
           head -5 "$DIR"/*.cmd 2>/dev/null | head -60
+
+      - name: Diagnose failing object.
+        if: failure() && env.ONLY_CACHE == 'false'
+        shell: bash
+        run: |
+          OUT="$(cygpath -u "$TBUILD")/$REPO_NAME/out"
+          echo "== ninja $(ninja --version), CL=[$CL], _CL_=[${_CL_:-}]"
+          OBJ=$(cd "$OUT" && ninja -t targets all | grep 'heif.cpp.obj' | head -1 | cut -d: -f1)
+          echo "== obj: $OBJ"
+          DIR="$OUT/$(dirname "$OBJ")"
+          echo "== obj dir exists after the failed build: $(test -d "$DIR" && echo yes || echo no)"
+          CMD=$(cd "$OUT" && ninja -t commands "$OBJ" | head -1)
+          echo "== command: $CMD"
+          echo "== 1) plain cl (no ccache), as-is"
+          (cd "$OUT" && cmd //c "${CMD#ccache }") && echo RESULT-OK || echo RESULT-FAILED
+          echo "== 2) plain cl (no ccache), obj dir pre-created"
+          mkdir -p "$DIR"
+          (cd "$OUT" && cmd //c "${CMD#ccache }") && echo RESULT-OK || echo RESULT-FAILED
+          echo "== 3) via ccache, obj dir pre-created"
+          (cd "$OUT" && cmd //c "$CMD") && echo RESULT-OK || echo RESULT-FAILED
 
       - name: Save ccache.
         # FORK: save on any outcome (except cancellation) — a failed run still
