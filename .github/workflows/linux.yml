@@ -223,6 +223,9 @@ jobs:
       - name: Move artifact.
         if: env.UPLOAD_ARTIFACT == 'true'
         run: |
+          # FORK: strip with MiniDebugInfo, as the official release does.
+          Telegram/build/minidebug.sh out/Release/NoWidgetGram
+          Telegram/build/minidebug.sh out/Release/Updater 2>/dev/null || true
           cd out/Release
           mkdir artifact
           mv NoWidgetGram artifact/

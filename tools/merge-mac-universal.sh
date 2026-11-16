@@ -48,6 +48,7 @@ while IFS= read -r -d '' found; do
     lipo -create "$a_in" "$b_in" -output "$dst.merged"
     rm -f "$dst.a64" "$dst.x64"
     mv "$dst.merged" "$dst"
+    strip -x "$dst"
 done < <(cd "$ARM64/$APP_NAME" && find . -type f -print0)
 
 rm -f "$OUT/$APP_NAME"/Contents/Frameworks/libswift*.dylib
