@@ -25,6 +25,11 @@ count_archs() {
 
 while IFS= read -r -d '' found; do
     rel="${found#./}"
+    case "$rel" in
+        Contents/Frameworks/libswift*.dylib)
+            continue
+            ;;
+    esac
     a="$ARM64/$APP_NAME/$rel"
     b="$X86_64/$APP_NAME/$rel"
     dst="$OUT/$APP_NAME/$rel"

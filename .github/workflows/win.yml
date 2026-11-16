@@ -113,6 +113,10 @@ jobs:
           Remove-Item -Recurse -Force "C:\Program Files\Amazon" -ErrorAction SilentlyContinue
           Remove-Item -Recurse -Force "C:\ProgramData\kind" -ErrorAction SilentlyContinue
           Remove-Item -Recurse -Force "C:\Users\runneradmin\.dotnet" -ErrorAction SilentlyContinue
+          Remove-Item -Recurse -Force "C:\vcpkg" -ErrorAction SilentlyContinue
+          Remove-Item -Recurse -Force "C:\Strawberry" -ErrorAction SilentlyContinue
+          Remove-Item -Recurse -Force "C:\tools\kotlinc" -ErrorAction SilentlyContinue
+          Remove-Item -Recurse -Force "C:\tools\php" -ErrorAction SilentlyContinue
           Get-ChildItem "C:\hostedtoolcache\windows" -Directory | Where-Object { $_.Name -notlike "Python*" } | ForEach-Object { Remove-Item -Recurse -Force $_.FullName -ErrorAction SilentlyContinue }
           Get-PSDrive C
 
@@ -157,10 +161,6 @@ jobs:
           unzip -q "$RUNNER_TEMP/ccache.zip" -d "$RUNNER_TEMP/ccache-dist"
           echo "$RUNNER_TEMP/ccache-dist/ccache-4.13.6-windows-x86_64" >> $GITHUB_PATH
           echo "CCACHE_DIR=$RUNNER_TEMP/.ccache" >> $GITHUB_ENV
-          # FORK: per-invocation compiler logs, dumped on failure.
-          mkdir -p "$RUNNER_TEMP/ccache-debug"
-          echo "CCACHE_DEBUG=1" >> $GITHUB_ENV
-          echo "CCACHE_DEBUG_DIR=$RUNNER_TEMP/ccache-debug" >> $GITHUB_ENV
 
       - name: Install VS 2026 Build Tools.
         if: matrix.arch == 'arm64'
@@ -327,11 +327,11 @@ jobs:
             }
             $pf = Get-WmiObject -Class Win32_PageFileSetting | Where-Object { $_.Name -ieq 'C:\pagefile.sys' }
             if ($pf) {
-              $pf.InitialSize = 8192
-              $pf.MaximumSize = 24576
+              $pf.InitialSize = 4096
+              $pf.MaximumSize = 8192
               $pf.Put() | Out-Null
             } else {
-              Set-WmiInstance -Class Win32_PageFileSetting -Arguments @{ Name = 'C:\pagefile.sys'; InitialSize = 8192; MaximumSize = 24576 } | Out-Null
+              Set-WmiInstance -Class Win32_PageFileSetting -Arguments @{ Name = 'C:\pagefile.sys'; InitialSize = 4096; MaximumSize = 8192 } | Out-Null
             }
             Get-WmiObject Win32_PageFileSetting | Format-List Name, InitialSize, MaximumSize
             "Commit limit after: {0:N1}GB (grows on demand up to RAM + pagefile max)" -f ((Get-WmiObject Win32_OperatingSystem).TotalVirtualMemorySize/1MB)
@@ -384,18 +384,6 @@ jobs:
       - name: ccache stats.
         if: env.ONLY_CACHE == 'false'
         run: ccache --show-stats
-
-      - name: ccache debug logs.
-        if: failure() && env.ONLY_CACHE == 'false'
-        shell: bash
-        run: |
-          DIR="$(cygpath -u "$CCACHE_DEBUG_DIR")"
-          for f in "$DIR"/*.log; do
-            echo "== $f"
-            grep -E "Uncacheable|error|Error|Result:|Running" "$f" | head -10
-          done | head -100
-          echo "== cmd files"
-          head -5 "$DIR"/*.cmd 2>/dev/null | head -60
 
       - name: Diagnose failing object.
         if: failure() && env.ONLY_CACHE == 'false'
