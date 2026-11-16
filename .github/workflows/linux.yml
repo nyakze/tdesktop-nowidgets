@@ -51,7 +51,9 @@ jobs:
 
   linux:
     name: Rocky Linux 8
-    runs-on: ${{ (github.event_name == 'pull_request' || startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/nightly') && 'depot-ubuntu-latest-16' || 'ubuntu-latest' }}
+    # FORK: depot-* runners belong to upstream's infra and are not available
+    # here; a PR/tag/nightly run would queue forever. Use the hosted runner.
+    runs-on: ubuntu-latest
 
     strategy:
       matrix:

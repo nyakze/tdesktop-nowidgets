@@ -59,14 +59,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # FORK: x64 + Qt6 only. The arm64 leg is broken in the current
-        # upstream dependency stack (dav1d vs new MSVC on windows-11-arm),
-        # x64_x86 and Qt5 legs are not needed for the fork. A single
-        # generator leg keeps the cold-cache disk usage under the limit
+        # FORK: x64 + Qt6 + Ninja Multi-Config only. The arm64 leg is broken in
+        # the current upstream dependency stack (dav1d vs new MSVC on
+        # windows-11-arm), x64_x86 and Qt5 legs are not needed for the fork.
+        # Ninja Multi-Config instead of the default Visual Studio generator:
+        # CMAKE_*_COMPILER_LAUNCHER is honored only by the Makefile and Ninja
+        # generators, and ccache is what turns repeated CI runs into minutes.
+        # A single generator leg keeps the cold-cache disk usage under the limit
         # of the standard windows runner.
         arch: [x64]
         qt: [qt6]
-        generator: [""]
+        generator: ["Ninja Multi-Config"]
 
     env:
       UPLOAD_ARTIFACT: "true"
@@ -76,6 +79,10 @@ jobs:
       # are part of the cache key; otherwise an exact hit restores a tree built
       # with different arguments and the rebuild never gets saved.
       PREPARE_ARGS: "silent ${{ matrix.qt }}"
+      # FORK: cap the compiler cache so it stays inside the repository cache
+      # budget together with the Libraries trees.
+      CCACHE_MAXSIZE: "2G"
+      CCACHE_SLOPPINESS: "pch_defines,time_macros"
 
     defaults:
       run:
@@ -143,6 +150,13 @@ jobs:
           echo "Configurate git for cherry-picks."
           git config --global user.email "you@example.com"
           git config --global user.name "Sample"
+
+          # FORK: compiler cache for the application build (same version as
+          # the Linux leg uses).
+          curl -sSL https://github.com/ccache/ccache/releases/download/v4.13.6/ccache-4.13.6-windows-x86_64.zip -o "$RUNNER_TEMP/ccache.zip"
+          unzip -q "$RUNNER_TEMP/ccache.zip" -d "$RUNNER_TEMP/ccache-dist"
+          echo "$RUNNER_TEMP/ccache-dist/ccache-4.13.6-windows-x86_64" >> $GITHUB_PATH
+          echo "CCACHE_DIR=$RUNNER_TEMP/.ccache" >> $GITHUB_ENV
 
       - name: Install VS 2026 Build Tools.
         if: matrix.arch == 'arm64'
@@ -321,10 +335,19 @@ jobs:
             Write-Host "::warning::Pagefile enlargement failed ($($_.Exception.Message)); continuing on the default pagefile. If MSVC OOMs on the PCH (C3859/C1076), lower the build --parallel."
           }
 
+      - name: Restore ccache.
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ${{ runner.OS }}-ccache-${{ github.run_id }}
+          restore-keys: ${{ runner.OS }}-ccache-
+
       - name: Telegram Desktop build.
         if: env.ONLY_CACHE == 'false'
         run: |
           cd %TBUILD%\%REPO_NAME%\Telegram
+
+          ccache -z
 
           call configure.bat ^
           %TDESKTOP_BUILD_GENERATOR% ^
@@ -336,6 +359,8 @@ jobs:
           -D CMAKE_MSVC_DEBUG_INFORMATION_FORMAT= ^
           -D CMAKE_EXE_LINKER_FLAGS="/PDB:NONE /INCREMENTAL:NO" ^
           -D CMAKE_SHARED_LINKER_FLAGS="/PDB:NONE /INCREMENTAL:NO" ^
+          -D CMAKE_C_COMPILER_LAUNCHER=ccache ^
+          -D CMAKE_CXX_COMPILER_LAUNCHER=ccache ^
           -D DESKTOP_APP_DISABLE_AUTOUPDATE=ON ^
           -D DESKTOP_APP_DISABLE_CRASH_REPORTS=OFF ^
           %TDESKTOP_BUILD_DEFINE%
@@ -343,6 +368,17 @@ jobs:
           rem FORK: full parallelism again — the pagefile step above lifts the
           rem commit limit that the Release PCH used to exhaust (C3859/C1076).
           cmake --build ..\out --config Release --parallel 4
+
+          ccache --show-stats
+
+      - name: Save ccache.
+        # FORK: save on any outcome (except cancellation) — a failed run still
+        # leaves useful compiler cache behind.
+        if: (success() || failure()) && env.ONLY_CACHE == 'false'
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ${{ runner.OS }}-ccache-${{ github.run_id }}
 
       - name: Move artifact.
         if: (env.UPLOAD_ARTIFACT == 'true') || (github.ref == 'refs/heads/nightly')
