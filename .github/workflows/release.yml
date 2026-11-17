@@ -65,12 +65,16 @@ jobs:
           mkdir -p dist
           LINUX_BIN=$(find work/Linux. -type f -name 'NoWidgetGram' | head -1)
           WIN_BIN=$(find work/Windows. -type f -name 'NoWidgetGram.exe' | head -1)
-          MAC_APP=$(find work/MacOS. -type d -name 'NoWidgetGram.app' | head -1)
-          test -n "$LINUX_BIN" && test -n "$WIN_BIN" && test -n "$MAC_APP"
+          test -n "$LINUX_BIN" && test -n "$WIN_BIN"
 
           tar -czf dist/NoWidgetGram-linux.tar.gz -C "$(dirname "$LINUX_BIN")" NoWidgetGram
           (cd "$(dirname "$WIN_BIN")" && zip -q "$OLDPWD/dist/NoWidgetGram-windows.zip" NoWidgetGram.exe)
-          (cd "$(dirname "$MAC_APP")" && zip -qr "$OLDPWD/dist/NoWidgetGram-macos.zip" NoWidgetGram.app)
+
+          for ARCH in arm64 x86_64; do
+            MAC_APP=$(find "work/MacOS./NoWidgetGram-macos-$ARCH" -type d -name 'NoWidgetGram.app' | head -1)
+            test -n "$MAC_APP"
+            (cd "$(dirname "$MAC_APP")" && zip -qr "$OLDPWD/dist/NoWidgetGram-macos-$ARCH.zip" NoWidgetGram.app)
+          done
 
           (cd dist && sha256sum NoWidgetGram-* > SHA256SUMS.txt)
           ls -lh dist
@@ -79,16 +83,13 @@ jobs:
         id: facts
         run: |
           set -euo pipefail
-          MAC_BIN=$(find work/MacOS. -type f -path '*NoWidgetGram.app/Contents/MacOS/*' | head -1)
-          ARCHS=$(file -b "$MAC_BIN" | grep -oE 'x86_64|arm64' | sort -u | tr '\n' ' ' | sed 's/ $//')
-          if [ -z "$ARCHS" ]; then
-            MAC_ARCH="unknown (see archive)"
-          elif echo "$ARCHS" | grep -q ' '; then
-            MAC_ARCH="universal ($ARCHS)"
-          else
-            MAC_ARCH="$ARCHS"
-          fi
-          echo "mac_arch=$MAC_ARCH" >> "$GITHUB_OUTPUT"
+          for ARCH in arm64 x86_64; do
+            BIN=$(find "work/MacOS./NoWidgetGram-macos-$ARCH" -type f -path '*NoWidgetGram.app/Contents/MacOS/*' | head -1)
+            test -n "$BIN"
+            file -b "$BIN" | grep -q "$ARCH" || { echo "ERROR: $ARCH package has a wrong binary"; exit 1; }
+            echo "$ARCH package verified"
+          done
+          echo "mac_arch=separate arm64 and x86_64 packages" >> "$GITHUB_OUTPUT"
 
       - name: Create release tag at the built commit.
         env:
@@ -127,7 +128,8 @@ jobs:
           |---|---|---|
           | \`NoWidgetGram-linux.tar.gz\` | Release | |
           | \`NoWidgetGram-windows.zip\` | Release | |
-          | \`NoWidgetGram-macos.zip\` | Release | universal (x86_64 + arm64) |
+          | \`NoWidgetGram-macos-arm64.zip\` | Release | Apple Silicon |
+          | \`NoWidgetGram-macos-x86_64.zip\` | Release | Intel (also runs on Apple Silicon via Rosetta) |
 
           macOS binary: ${{ steps.facts.outputs.mac_arch }}
 
@@ -153,7 +155,7 @@ jobs:
           else
             PRE=""
           fi
-          gh release create "$TAG" dist/NoWidgetGram-linux.tar.gz dist/NoWidgetGram-windows.zip dist/NoWidgetGram-macos.zip dist/SHA256SUMS.txt \
+          gh release create "$TAG" dist/NoWidgetGram-linux.tar.gz dist/NoWidgetGram-windows.zip dist/NoWidgetGram-macos-arm64.zip dist/NoWidgetGram-macos-x86_64.zip dist/SHA256SUMS.txt \
             --repo "$GITHUB_REPOSITORY" \
             --title "NoWidgetGram $VERSION" \
             --notes-file notes.md \

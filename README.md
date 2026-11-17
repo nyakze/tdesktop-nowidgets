@@ -42,7 +42,8 @@ Prebuilt binaries are on the [Releases][releases] page:
 
 * `NoWidgetGram-linux` — Linux (x86-64)
 * `NoWidgetGram-windows` — Windows (x64)
-* `NoWidgetGram-macos` — macOS
+* `NoWidgetGram-macos-arm64` — macOS (Apple Silicon)
+* `NoWidgetGram-macos-x86_64` — macOS (Intel)
 
 The application is branded **NoWidgetGram** (own name and icon) and keeps its profile
 separately from official Telegram Desktop.

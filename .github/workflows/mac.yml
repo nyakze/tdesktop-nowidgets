@@ -143,8 +143,8 @@ jobs:
 
           # FORK: the Swift translation module cannot be built as a fat binary
           # in a single pass, so each architecture is configured and built on
-          # its own (the recipe of Telegram/build/build_mac.py) and a separate
-          # job merges the trees into one universal bundle with lipo.
+          # its own (the recipe of Telegram/build/build_mac.py) and shipped as
+          # a separate package.
           # FORK: no compiler cache on macOS — the per-architecture object
           # sets do not fit the 10 GB repository cache budget together with
           # the dependency trees, and a partially filled cache brings no hits
@@ -164,38 +164,15 @@ jobs:
 
           cmake --build "$PWD/out-${{ matrix.arch }}" --target Telegram --parallel
 
-      - uses: actions/upload-artifact@v7
-        name: Upload arch tree.
-        with:
-          name: macos-tree-${{ matrix.arch }}
-          path: ${{ env.REPO_NAME }}/out-${{ matrix.arch }}/NoWidgetGram.app
-          retention-days: 3
-
-  universal:
-    name: MacOS universal
-    needs: build
-    runs-on: macos-latest
-
-    steps:
-      - name: Get repository name.
-        run: echo "REPO_NAME=${GITHUB_REPOSITORY##*/}" >> $GITHUB_ENV
-
-      - name: Clone.
-        uses: actions/checkout@v7
-
-      - uses: actions/download-artifact@v7
-        name: Download arch trees.
-        with:
-          pattern: macos-tree-*
-          path: trees
-
-      - name: Merge universal bundle.
+      - name: Strip symbols.
         run: |
-          ./tools/merge-mac-universal.sh trees/macos-tree-arm64 trees/macos-tree-x86_64 out/Release
+          find "$REPO_NAME/out-${{ matrix.arch }}/NoWidgetGram.app" -type f | while read -r f; do
+            strip -x "$f" 2>/dev/null || true
+          done
 
       - uses: actions/upload-artifact@v7
         name: Upload artifact.
         with:
-          name: NoWidgetGram
-          path: out/Release/
+          name: NoWidgetGram-macos-${{ matrix.arch }}
+          path: ${{ env.REPO_NAME }}/out-${{ matrix.arch }}/NoWidgetGram.app
           retention-days: 30
