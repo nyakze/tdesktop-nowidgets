@@ -54,7 +54,7 @@ jobs:
             while IFS= read -r aname; do
               [ -z "$aname" ] && continue
               echo "  artifact: $aname"
-              gh run download "$RUN" --repo "$GITHUB_REPOSITORY" -n "$aname" -D "work/$name"
+              gh run download "$RUN" --repo "$GITHUB_REPOSITORY" -n "$aname" -D "work/$name/$aname"
             done <<< "$ARTIFACTS"
           done
           find work -maxdepth 3 | head -40
