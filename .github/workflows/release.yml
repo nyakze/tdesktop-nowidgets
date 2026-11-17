@@ -71,9 +71,14 @@ jobs:
           (cd "$(dirname "$WIN_BIN")" && zip -q "$OLDPWD/dist/NoWidgetGram-windows.zip" NoWidgetGram.exe)
 
           for ARCH in arm64 x86_64; do
-            MAC_APP=$(find "work/MacOS./NoWidgetGram-macos-$ARCH" -type d -name 'NoWidgetGram.app' | head -1)
-            test -n "$MAC_APP"
-            (cd "$(dirname "$MAC_APP")" && zip -qr "$OLDPWD/dist/NoWidgetGram-macos-$ARCH.zip" NoWidgetGram.app)
+            # The uploaded artifact holds the bundle contents without the
+            # .app wrapper, so stage the folder around them.
+            SRC="work/MacOS./NoWidgetGram-macos-$ARCH"
+            test -f "$SRC/Contents/MacOS/NoWidgetGram"
+            STAGE="work/macos-$ARCH"
+            mkdir -p "$STAGE"
+            mv "$SRC" "$STAGE/NoWidgetGram.app"
+            (cd "$STAGE" && zip -qr "$OLDPWD/dist/NoWidgetGram-macos-$ARCH.zip" NoWidgetGram.app)
           done
 
           (cd dist && sha256sum NoWidgetGram-* > SHA256SUMS.txt)
@@ -84,8 +89,8 @@ jobs:
         run: |
           set -euo pipefail
           for ARCH in arm64 x86_64; do
-            BIN=$(find "work/MacOS./NoWidgetGram-macos-$ARCH" -type f -path '*NoWidgetGram.app/Contents/MacOS/*' | head -1)
-            test -n "$BIN"
+            BIN="work/macos-$ARCH/NoWidgetGram.app/Contents/MacOS/NoWidgetGram"
+            test -f "$BIN"
             file -b "$BIN" | grep -q "$ARCH" || { echo "ERROR: $ARCH package has a wrong binary"; exit 1; }
             echo "$ARCH package verified"
           done
