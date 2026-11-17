@@ -63,13 +63,6 @@ jobs:
       # are part of the cache key; otherwise an exact hit restores a tree built
       # with different arguments and the rebuild never gets saved.
       PREPARE_ARGS: "silent"
-      # FORK: cap the compiler cache so it stays inside the repository cache
-      # budget together with the Libraries trees. Only the arm64 tree is
-      # cached: the per-architecture object sets do not both fit the budget,
-      # and a cache set smaller than the working set brings no hits on these
-      # full rebuilds.
-      CCACHE_MAXSIZE: "1800M"
-      CCACHE_SLOPPINESS: "pch_defines,time_macros"
 
     steps:
       - name: Get repository name.
@@ -88,12 +81,6 @@ jobs:
           brew update
           brew upgrade || true
           brew install automake libtool meson nasm ninja pkg-config
-
-          # FORK: compiler cache for the application build (same version as
-          # the Linux leg uses).
-          curl -sSL https://github.com/ccache/ccache/releases/download/v4.13.6/ccache-4.13.6-darwin.tar.gz | tar xz -C "$RUNNER_TEMP"
-          echo "$RUNNER_TEMP/ccache-4.13.6-darwin" >> $GITHUB_PATH
-          echo "CCACHE_DIR=$RUNNER_TEMP/.ccache" >> $GITHUB_ENV
 
           # Disable spotlight.
           sudo mdutil -a -i off
@@ -149,13 +136,6 @@ jobs:
             ThirdParty
           key: ${{ steps.cache-libs.outputs.cache-primary-key }}
 
-      - name: Restore ccache.
-        uses: actions/cache/restore@v6
-        with:
-          path: ${{ env.CCACHE_DIR }}
-          key: ${{ runner.OS }}-ccache-${{ github.run_id }}
-          restore-keys: ${{ runner.OS }}-ccache-
-
       - name: Telegram Desktop build.
         if: env.ONLY_CACHE == 'false'
         run: |
@@ -170,26 +150,22 @@ jobs:
             echo "ARTIFACT_NAME=NoWidgetGram" >> $GITHUB_ENV
           fi
 
-          ccache -z
-
           # FORK: the Swift translation module cannot be built as a fat binary
           # in a single pass, so each architecture is configured and built on
           # its own (the recipe of Telegram/build/build_mac.py) and the trees
           # are merged into one universal bundle with lipo.
+          # FORK: no compiler cache on macOS — the per-architecture object
+          # sets do not fit the 10 GB repository cache budget together with
+          # the dependency trees, and a partially filled cache brings no hits
+          # on these full rebuilds. The budget goes to the Windows and Linux
+          # compiler caches, which save more per gigabyte.
           for ARCH in arm64 x86_64; do
-            if [ "$ARCH" = "arm64" ]; then
-              unset CCACHE_DISABLE
-            else
-              export CCACHE_DISABLE=1
-            fi
             python3 Telegram/configure.py -GNinja -B "$PWD/out-$ARCH" \
             -D CMAKE_BUILD_TYPE=Release \
             -D CMAKE_OSX_ARCHITECTURES="x86_64;arm64" \
             -D DESKTOP_APP_MAC_ARCH=$ARCH \
             -D DESKTOP_APP_ENABLE_LTO=ON \
             -D CMAKE_COMPILE_WARNING_AS_ERROR=ON \
-            -D CMAKE_C_COMPILER_LAUNCHER=ccache \
-            -D CMAKE_CXX_COMPILER_LAUNCHER=ccache \
             -D TDESKTOP_API_ID=${{ secrets.TDESKTOP_API_ID }} \
             -D TDESKTOP_API_HASH=${{ secrets.TDESKTOP_API_HASH }} \
             -D DESKTOP_APP_DISABLE_AUTOUPDATE=ON \
@@ -199,17 +175,6 @@ jobs:
           done
 
           ./tools/merge-mac-universal.sh out-arm64 out-x86_64 out/Release
-
-          ccache --show-stats
-
-      - name: Save ccache.
-        # FORK: save on any outcome (except cancellation) — a failed run still
-        # leaves useful compiler cache behind.
-        if: (success() || failure()) && env.ONLY_CACHE == 'false'
-        uses: actions/cache/save@v6
-        with:
-          path: ${{ env.CCACHE_DIR }}
-          key: ${{ runner.OS }}-ccache-${{ github.run_id }}
 
       - name: Move artifact.
         if: env.UPLOAD_ARTIFACT == 'true'

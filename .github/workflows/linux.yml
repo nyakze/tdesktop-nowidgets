@@ -47,6 +47,10 @@ on:
       - 'Telegram/configure.bat'
       - 'Telegram/Telegram.plist'
 
+permissions:
+  contents: read
+  actions: write
+
 jobs:
 
   linux:
@@ -137,11 +141,19 @@ jobs:
             ${{ runner.temp }}/.mount-cache
           key: ${{ steps.cache-libs.outputs.cache-primary-key }}
 
-      # FORK: the compiler cache is not persisted for Linux — the build takes
-      # ~13 minutes anyway and the 10 GB repository cache budget is better
-      # spent on the Windows and macOS compiler caches and the dependency
-      # trees (a cache set that does not fit the budget gets evicted and
-      # forces multi-hour dependency rebuilds).
+      # FORK: the Linux compiler cache is persisted after all — without it the
+      # LTO build takes ~1.5 hours instead of ~10 minutes. It is capped small
+      # to fit the 10 GB repository cache budget together with the dependency
+      # trees and the Windows compiler cache; superseded entries are pruned
+      # after saving so they never evict the dependency trees.
+      - name: Restore Telegram Desktop cache.
+        id: cache-tdesktop
+        if: env.ONLY_CACHE == 'false'
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ${{ runner.OS }}-tdesktop-${{ matrix.defines || 'null' }}-${{ github.run_id }}
+          restore-keys: ${{ runner.OS }}-tdesktop-${{ matrix.defines || 'null' }}-
 
       - name: Telegram Desktop build.
         if: env.ONLY_CACHE == 'false'
@@ -166,6 +178,7 @@ jobs:
           -v ${{ env.CCACHE_DIR }}:/var/cache/ccache \
           -e CONFIG=Release \
           -e CCACHE_SLOPPINESS=pch_defines,time_macros \
+          -e CCACHE_MAXSIZE=1G \
           $IMAGE_TAG \
           env -u CCACHE_DISABLE /usr/src/tdesktop/Telegram/build/docker/centos_env/build.sh \
           -D CMAKE_CONFIGURATION_TYPES=Release \
@@ -177,6 +190,23 @@ jobs:
           -D DESKTOP_APP_DISABLE_AUTOUPDATE=ON \
           -D DESKTOP_APP_DISABLE_CRASH_REPORTS=OFF \
           $DEFINE
+
+      - name: Save Telegram Desktop cache.
+        if: ${{ !cancelled() && env.ONLY_CACHE == 'false' }}
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ${{ steps.cache-tdesktop.outputs.cache-primary-key }}
+
+      - name: Prune older compiler caches.
+        if: ${{ !cancelled() && env.ONLY_CACHE == 'false' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          CURRENT="${{ steps.cache-tdesktop.outputs.cache-primary-key }}"
+          gh cache list -R "$GITHUB_REPOSITORY" --key "Linux-tdesktop-" --json key --jq '.[].key' | while read -r key; do
+            [ "$key" = "$CURRENT" ] || gh cache delete "$key" -R "$GITHUB_REPOSITORY" || true
+          done
 
       - name: Check.
         if: env.ONLY_CACHE == 'false'

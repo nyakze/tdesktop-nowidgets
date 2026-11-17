@@ -47,6 +47,10 @@ on:
       - 'Telegram/configure.sh'
       - 'Telegram/Telegram.plist'
 
+permissions:
+  contents: read
+  actions: write
+
 jobs:
 
   windows:
@@ -418,6 +422,20 @@ jobs:
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ runner.OS }}-ccache-${{ github.run_id }}
+
+      - name: Prune older compiler caches.
+        # FORK: superseded compiler caches would otherwise evict the Libraries
+        # trees from the 10 GB repository cache budget (they are always the
+        # oldest entries by access time).
+        if: (success() || failure()) && env.ONLY_CACHE == 'false'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          CURRENT="${{ runner.OS }}-ccache-${{ github.run_id }}"
+          gh cache list -R "$GITHUB_REPOSITORY" --key "${{ runner.OS }}-ccache-" --json key --jq '.[].key' | while read -r key; do
+            [ "$key" = "$CURRENT" ] || gh cache delete "$key" -R "$GITHUB_REPOSITORY" || true
+          done
 
       - name: Move artifact.
         if: (env.UPLOAD_ARTIFACT == 'true') || (github.ref == 'refs/heads/nightly')
