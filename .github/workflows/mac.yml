@@ -45,18 +45,19 @@ on:
 
 jobs:
 
-  macos:
-    name: MacOS
+  build:
+    name: MacOS ${{ matrix.arch }}
     # FORK: depot-* runners belong to upstream's infra and are not available
     # here; a PR/tag/nightly run would queue forever. Use the hosted runner.
     runs-on: macos-latest
 
     strategy:
+      fail-fast: false
       matrix:
+        arch: [arm64, x86_64]
         defines:
           - ""
     env:
-      UPLOAD_ARTIFACT: "true"
       ONLY_CACHE: "false"
       PREPARE_PATH: "Telegram/build/prepare/prepare.py"
       # FORK: the prepared Libraries tree depends on these arguments, so they
@@ -137,56 +138,64 @@ jobs:
           key: ${{ steps.cache-libs.outputs.cache-primary-key }}
 
       - name: Telegram Desktop build.
-        if: env.ONLY_CACHE == 'false'
         run: |
           cd $REPO_NAME
 
-          DEFINE=""
-          if [ -n "${{ matrix.defines }}" ]; then
-            DEFINE="-D ${{ matrix.defines }}=ON"
-            echo Define from matrix: $DEFINE
-            echo "ARTIFACT_NAME=NoWidgetGram ${{ matrix.defines }}" >> $GITHUB_ENV
-          else
-            echo "ARTIFACT_NAME=NoWidgetGram" >> $GITHUB_ENV
-          fi
-
           # FORK: the Swift translation module cannot be built as a fat binary
           # in a single pass, so each architecture is configured and built on
-          # its own (the recipe of Telegram/build/build_mac.py) and the trees
-          # are merged into one universal bundle with lipo.
+          # its own (the recipe of Telegram/build/build_mac.py) and a separate
+          # job merges the trees into one universal bundle with lipo.
           # FORK: no compiler cache on macOS — the per-architecture object
           # sets do not fit the 10 GB repository cache budget together with
           # the dependency trees, and a partially filled cache brings no hits
           # on these full rebuilds. The budget goes to the Windows and Linux
           # compiler caches, which save more per gigabyte.
-          for ARCH in arm64 x86_64; do
-            python3 Telegram/configure.py -GNinja -B "$PWD/out-$ARCH" \
-            -D CMAKE_BUILD_TYPE=Release \
-            -D CMAKE_OSX_ARCHITECTURES="x86_64;arm64" \
-            -D DESKTOP_APP_MAC_ARCH=$ARCH \
-            -D DESKTOP_APP_ENABLE_LTO=ON \
-            -D CMAKE_COMPILE_WARNING_AS_ERROR=ON \
-            -D TDESKTOP_API_ID=${{ secrets.TDESKTOP_API_ID }} \
-            -D TDESKTOP_API_HASH=${{ secrets.TDESKTOP_API_HASH }} \
-            -D DESKTOP_APP_DISABLE_AUTOUPDATE=ON \
-            -D DESKTOP_APP_DISABLE_CRASH_REPORTS=OFF \
-            $DEFINE
-            cmake --build "$PWD/out-$ARCH" --target Telegram --parallel
-          done
+          python3 Telegram/configure.py -GNinja -B "$PWD/out-${{ matrix.arch }}" \
+          -D CMAKE_BUILD_TYPE=Release \
+          -D CMAKE_OSX_ARCHITECTURES="x86_64;arm64" \
+          -D DESKTOP_APP_MAC_ARCH=${{ matrix.arch }} \
+          -D DESKTOP_APP_ENABLE_LTO=ON \
+          -D CMAKE_COMPILE_WARNING_AS_ERROR=ON \
+          -D TDESKTOP_API_ID=${{ secrets.TDESKTOP_API_ID }} \
+          -D TDESKTOP_API_HASH=${{ secrets.TDESKTOP_API_HASH }} \
+          -D DESKTOP_APP_DISABLE_AUTOUPDATE=ON \
+          -D DESKTOP_APP_DISABLE_CRASH_REPORTS=OFF \
+          ${{ matrix.defines && format('-D {0}=ON', matrix.defines) || '' }}
 
-          ./tools/merge-mac-universal.sh out-arm64 out-x86_64 out/Release
+          cmake --build "$PWD/out-${{ matrix.arch }}" --target Telegram --parallel
 
-      - name: Move artifact.
-        if: env.UPLOAD_ARTIFACT == 'true'
-        run: |
-          cd $REPO_NAME/out/Release
-          mkdir artifact
-          mv NoWidgetGram.app artifact/
-          mv Updater artifact/ 2>/dev/null || true
       - uses: actions/upload-artifact@v7
-        if: env.UPLOAD_ARTIFACT == 'true'
+        name: Upload arch tree.
+        with:
+          name: macos-tree-${{ matrix.arch }}
+          path: ${{ env.REPO_NAME }}/out-${{ matrix.arch }}/NoWidgetGram.app
+          retention-days: 3
+
+  universal:
+    name: MacOS universal
+    needs: build
+    runs-on: macos-latest
+
+    steps:
+      - name: Get repository name.
+        run: echo "REPO_NAME=${GITHUB_REPOSITORY##*/}" >> $GITHUB_ENV
+
+      - name: Clone.
+        uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v7
+        name: Download arch trees.
+        with:
+          pattern: macos-tree-*
+          path: trees
+
+      - name: Merge universal bundle.
+        run: |
+          ./tools/merge-mac-universal.sh trees/macos-tree-arm64 trees/macos-tree-x86_64 out/Release
+
+      - uses: actions/upload-artifact@v7
         name: Upload artifact.
         with:
-          name: ${{ env.ARTIFACT_NAME }}
-          path: ${{ env.REPO_NAME }}/out/Release/artifact/
+          name: NoWidgetGram
+          path: out/Release/
           retention-days: 30
