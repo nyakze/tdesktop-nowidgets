@@ -43,6 +43,10 @@ on:
       - 'Telegram/SourceFiles/platform/linux/**'
       - 'Telegram/configure.bat'
 
+permissions:
+  contents: read
+  actions: write
+
 jobs:
 
   build:
@@ -136,6 +140,19 @@ jobs:
             Libraries
             ThirdParty
           key: ${{ steps.cache-libs.outputs.cache-primary-key }}
+
+      - name: Prune older Libraries caches.
+        # FORK: the run-scoped Libraries keys accumulate one ~2.8 GB entry per
+        # rebuild and would evict everything else from the 10 GB repository
+        # cache budget. Keep only the entry this run produced.
+        if: ${{ !cancelled() && env.PREPARE_REBUILT == 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          CURRENT="${{ steps.cache-libs.outputs.cache-primary-key }}"
+          gh cache list -R "$GITHUB_REPOSITORY" --key "macOS-libs-" --json key --jq '.[].key' | while read -r key; do
+            [ "$key" = "$CURRENT" ] || gh cache delete "$key" -R "$GITHUB_REPOSITORY" || true
+          done
 
       - name: Telegram Desktop build.
         run: |
